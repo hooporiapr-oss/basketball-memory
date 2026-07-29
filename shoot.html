@@ -751,7 +751,7 @@ var FLOATER_FLIGHT_MS=260;
 var FLOATER_PACE_MS=550;
 var FLOATER_SWEET_MIN=.42;
 var FLOATER_SWEET_MAX=.82;
-var FLOATER_BALL_HIT_RADIUS_MIN=24;
+var FLOATER_BALL_HIT_RADIUS_MIN=34;
 var FLOATER_ORIGIN_Y_FRAC=.90;
 
 function machineBallHitRadius(){
@@ -922,11 +922,29 @@ function showFloaterTarget(t){
   updateHud(t);
 }
 
+// Maps linear time-progress to on-screen position progress: fast approach,
+// then a deliberate slow "hang" through the release window (matching a real
+// floater's touch), then a fast finish if never released. This is what
+// actually gives a player enough real-world reaction time to hit a target
+// that's still visually moving — without it, the ball covers far more
+// distance during a normal human reaction delay than any reasonable hit
+// radius could forgive.
+function floaterPositionEase(progress){
+  if(progress<.35){
+    return (progress/.35)*.75;
+  }else if(progress<.85){
+    return .75+((progress-.35)/.50)*.17;
+  }else{
+    return .92+((progress-.85)/.15)*.08;
+  }
+}
+
 function updateFloaterDrivePosition(t){
   var origin=floaterOrigin();
   var progress=Math.max(0,Math.min(1,(t-floater.driveStartAt)/FLOATER_DRIVE_MS));
-  floater.ballX=origin.x+(hoop.x-origin.x)*progress;
-  floater.ballY=origin.y+(hoop.y-origin.y)*progress;
+  var posProgress=floaterPositionEase(progress);
+  floater.ballX=origin.x+(hoop.x-origin.x)*posProgress;
+  floater.ballY=origin.y+(hoop.y-origin.y)*posProgress;
   floater.ballProgress=progress;
   return progress;
 }
