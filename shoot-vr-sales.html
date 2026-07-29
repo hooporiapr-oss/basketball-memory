@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SHOOT VR | Hooporia</title>
+<style>
+:root{
+  --bg-0:#050100;
+  --bg-1:#0a0300;
+  --ember:#3e1200;
+  --flame:#f37418;
+  --flame-bright:#ff9b50;
+  --ball:#ff6b35;
+  --made:#46ff78;
+  --ink:#ffffff;
+  --ink-dim:#c9b8a8;
+  --ink-faint:#7a6a5e;
+  --line:rgba(255,126,32,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg-0);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  overflow-x:hidden;
+}
+h1,h2,h3,.display{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  font-weight:900;
+  letter-spacing:-.01em;
+  line-height:1.02;
+}
+.eyebrow{
+  font-size:.72rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--flame);margin-bottom:14px;
+}
+section{
+  max-width:1080px;margin:0 auto;padding:100px 24px;
+}
+@media(max-width:720px){section{padding:64px 20px}}
+
+/* ---------- NAV ---------- */
+nav{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;background:rgba(5,1,0,.86);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.navLogo{font-weight:900;font-size:1.05rem;letter-spacing:-.01em}
+.navLogo span{color:var(--flame)}
+.navCta{
+  padding:10px 20px;border-radius:999px;background:var(--flame);color:#1a0900;
+  font-weight:800;font-size:.82rem;text-decoration:none;letter-spacing:.02em;
+  white-space:nowrap;
+}
+.langToggle{
+  display:flex;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:3px;
+}
+.langBtn{
+  border:none;background:none;color:var(--ink-dim);font-weight:800;font-size:.74rem;
+  padding:6px 13px;border-radius:999px;cursor:pointer;letter-spacing:.04em;
+}
+.langBtn.active{background:var(--flame);color:#1a0900}
+
+/* ---------- HERO ---------- */
+.hero{
+  min-height:88vh;display:flex;flex-direction:column;justify-content:center;
+  background:
+    radial-gradient(circle at 18% 8%,rgba(255,107,53,.16),transparent 32%),
+    radial-gradient(circle at 82% 82%,rgba(255,107,53,.10),transparent 40%),
+    linear-gradient(180deg,var(--bg-1),var(--bg-0));
+  text-align:center;padding-top:80px;
+}
+.hero h1{
+  font-size:clamp(2.6rem,7vw,5.2rem);
+}
+.hero h1 .accent{color:var(--flame)}
+.hero p.lede{
+  max-width:620px;margin:26px auto 0;color:var(--ink-dim);font-size:1.15rem;line-height:1.55;
+}
+.heroActions{display:flex;gap:14px;justify-content:center;margin-top:38px;flex-wrap:wrap}
+.btnPrimary{
+  padding:16px 30px;border-radius:12px;background:linear-gradient(135deg,var(--flame),var(--flame-bright));
+  color:#1a0900;font-weight:900;font-size:1rem;text-decoration:none;letter-spacing:.01em;
+  box-shadow:0 0 30px rgba(243,116,24,.35);
+}
+.btnGhost{
+  padding:16px 30px;border-radius:12px;border:1px solid rgba(255,255,255,.22);color:var(--ink);
+  font-weight:800;font-size:1rem;text-decoration:none;
+}
+.heroTag{
+  margin-top:52px;font-size:.78rem;color:var(--ink-faint);letter-spacing:.04em;
+}
+
+/* ---------- CONTRAST (signature) ---------- */
+.contrastWrap{padding-top:60px;padding-bottom:60px}
+.contrastHead{text-align:center;max-width:640px;margin:0 auto 56px}
+.contrastHead h2{font-size:clamp(1.8rem,4vw,2.6rem)}
+.contrastGrid{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;
+}
+@media(max-width:760px){.contrastGrid{grid-template-columns:1fr;gap:28px}}
+.contrastCol{
+  padding:40px 32px;border-radius:20px;position:relative;
+}
+.contrastCol.old{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);
+}
+.contrastCol.new{
+  background:rgba(70,255,120,.05);border:1px solid rgba(70,255,120,.28);
+  box-shadow:0 0 50px rgba(70,255,120,.08);
+}
+.contrastLabel{
+  font-size:.7rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:18px;
+}
+.contrastCol.old .contrastLabel{color:var(--ink-faint)}
+.contrastCol.new .contrastLabel{color:var(--made)}
+.contrastIcon{
+  width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin-bottom:22px;font-size:2rem;
+}
+.contrastCol.old .contrastIcon{background:rgba(255,255,255,.06)}
+.contrastCol.new .contrastIcon{background:rgba(70,255,120,.14)}
+.contrastCol h3{font-size:1.3rem;margin-bottom:10px}
+.contrastCol p{color:var(--ink-dim);font-size:.95rem;line-height:1.6}
+.contrastVs{
+  display:flex;align-items:center;justify-content:center;padding:0 22px;
+  font-weight:900;font-size:1.1rem;color:var(--ink-faint);letter-spacing:.05em;
+}
+@media(max-width:760px){.contrastVs{padding:4px 0}}
+
+/* ---------- HOW IT WORKS ---------- */
+.howGrid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:44px;
+}
+@media(max-width:760px){.howGrid{grid-template-columns:1fr}}
+.howCard{
+  padding:30px 26px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.02);
+}
+.howCard .num{
+  font-size:.75rem;font-weight:800;color:var(--flame);letter-spacing:.1em;margin-bottom:14px;
+}
+.howCard h3{font-size:1.15rem;margin-bottom:10px}
+.howCard p{color:var(--ink-dim);font-size:.92rem;line-height:1.55}
+
+/* ---------- HARDWARE ---------- */
+.hwSection{
+  background:linear-gradient(180deg,var(--bg-0),var(--ember) 340%,var(--bg-0));
+}
+.hwCard{
+  display:flex;gap:32px;align-items:center;padding:40px;border-radius:22px;
+  border:1px solid var(--line);background:rgba(255,255,255,.025);margin-top:40px;
+}
+@media(max-width:760px){.hwCard{flex-direction:column;text-align:center}}
+.hwBadge{
+  flex-shrink:0;width:120px;height:120px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(243,116,24,.18),rgba(255,107,53,.06));
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:2.6rem;
+}
+.hwCard h3{font-size:1.4rem;margin-bottom:8px}
+.hwCard p{color:var(--ink-dim);font-size:.95rem;line-height:1.6}
+.hwList{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;
+}
+.hwPill{
+  padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.06);
+  font-size:.78rem;font-weight:700;color:var(--ink-dim);
+}
+.hwNote{
+  margin-top:18px;font-size:.82rem;color:var(--ink-faint);
+}
+
+/* ---------- USE CASES ---------- */
+.useGrid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:44px;
+}
+@media(max-width:900px){.useGrid{grid-template-columns:repeat(2,1fr)}}
+.useCard{
+  padding:26px 20px;border-radius:14px;border:1px solid var(--line);text-align:center;
+}
+.useCard .emoji{font-size:1.8rem;margin-bottom:12px}
+.useCard h4{font-size:.98rem;margin-bottom:6px}
+.useCard p{font-size:.82rem;color:var(--ink-faint);line-height:1.5}
+
+/* ---------- CTA ---------- */
+.ctaSection{text-align:center;padding-bottom:140px}
+.ctaBox{
+  border-radius:26px;padding:64px 40px;
+  background:radial-gradient(circle at center,rgba(255,107,53,.14),transparent 70%),rgba(255,255,255,.02);
+  border:1px solid var(--line);
+}
+.ctaBox h2{font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:16px}
+.ctaBox p{color:var(--ink-dim);max-width:520px;margin:0 auto 34px;font-size:1.02rem;line-height:1.6}
+
+footer{
+  text-align:center;padding:36px 24px;color:var(--ink-faint);font-size:.78rem;
+  border-top:1px solid var(--line);
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="navLogo">SHOOT <span>VR</span></div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="langToggle">
+      <button class="langBtn active" id="langEnBtn" type="button">EN</button>
+      <button class="langBtn" id="langEsBtn" type="button">ES</button>
+    </div>
+    <a class="navCta" href="#contact" data-i18n="navCta">Request a Demo</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="eyebrow" style="text-align:center" data-i18n="heroEyebrow">Hooporia · Next Generation Training</div>
+  <h1 data-i18n-html="heroH1">The ball is in your hands<br><span class="accent">now.</span></h1>
+  <p class="lede" data-i18n="heroLede">Every Hooporia mode until now has trained the eyes and the reflexes. SHOOT VR trains the shot itself — a real basketball in your real hands, caught and released the way it happens on an actual court.</p>
+  <div class="heroActions">
+    <a class="btnPrimary" href="#contact" data-i18n="heroBtn1">Bring SHOOT VR to your program</a>
+    <a class="btnGhost" href="#how-it-works" data-i18n="heroBtn2">See how it works</a>
+  </div>
+  <div class="heroTag" data-i18n="heroTag">No controllers. No buttons. Just hands.</div>
+</div>
+
+<section class="contrastWrap">
+  <div class="contrastHead">
+    <div class="eyebrow" style="text-align:center" data-i18n="contrastEyebrow">The Difference</div>
+    <h2 data-i18n="contrastH2">Everything up to now has been a hand on a screen.</h2>
+  </div>
+  <div class="contrastGrid">
+    <div class="contrastCol old">
+      <div class="contrastLabel" data-i18n="contrastOldLabel">Screen Training</div>
+      <div class="contrastIcon">👆</div>
+      <h3 data-i18n="contrastOldH3">Tap the target</h3>
+      <p data-i18n="contrastOldP">Reaction Speed, Shooting Machine, and SHOOT's Three-Pointer and Floater modes train real skills — timing, tracking, decision-making — through a tap or a click.</p>
+    </div>
+    <div class="contrastVs">VS</div>
+    <div class="contrastCol new">
+      <div class="contrastLabel">SHOOT VR</div>
+      <div class="contrastIcon">🏀</div>
+      <h3 data-i18n="contrastNewH3">Catch. Rise. Release.</h3>
+      <p data-i18n="contrastNewP">The headset sees your actual hands. You catch a real pass, bring the ball up, and release with a genuine shooting motion — the same mechanics as the shot itself, not a stand-in for it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works">
+  <div class="eyebrow" data-i18n="howEyebrow">How It Works</div>
+  <h2 style="font-size:clamp(1.8rem,4vw,2.6rem);max-width:640px" data-i18n="howH2">Built on hand tracking, not controllers.</h2>
+  <div class="howGrid">
+    <div class="howCard">
+      <div class="num">01</div>
+      <h3 data-i18n="howCard1H3">Catch</h3>
+      <p data-i18n="howCard1P">A pass arrives. Your headset's cameras track your fingers and palm in real time — you catch it with your actual hands, no trigger to hold.</p>
+    </div>
+    <div class="howCard">
+      <div class="num">02</div>
+      <h3 data-i18n="howCard2H3">Rise</h3>
+      <p data-i18n="howCard2P">Bring the ball up into a shooting motion. The system reads your hand's real position and speed as you gather into the shot.</p>
+    </div>
+    <div class="howCard">
+      <div class="num">03</div>
+      <h3 data-i18n="howCard3H3">Release</h3>
+      <p data-i18n="howCard3P">Let go at the right moment, with the right motion. Made or missed is decided by how you actually shot it — not a tap on a flat screen.</p>
+    </div>
+  </div>
+</section>
+
+<section class="hwSection">
+  <div class="eyebrow" data-i18n="hwEyebrow">What You'll Need</div>
+  <h2 style="font-size:clamp(1.8rem,4vw,2.6rem);max-width:640px" data-i18n="hwH2">One headset. Hands already built in.</h2>
+  <div class="hwCard">
+    <div class="hwBadge">🥽</div>
+    <div>
+      <h3 data-i18n="hwCardH3">Meta Quest — our recommended headset</h3>
+      <p data-i18n="hwCardP">SHOOT VR is built around Meta Quest's built-in hand tracking — no controllers, no extra sensors, no additional purchase beyond the headset itself.</p>
+      <div class="hwList">
+        <div class="hwPill">Meta Quest 3</div>
+        <div class="hwPill">Meta Quest 3S</div>
+        <div class="hwPill">Meta Quest 2</div>
+        <div class="hwPill">Meta Quest Pro</div>
+      </div>
+      <div class="hwNote" data-i18n="hwNote">Ask us about bundle pricing — SHOOT VR plus recommended Meta Quest headsets, sized to your program.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow" data-i18n="useEyebrow">Where It Fits</div>
+  <h2 style="font-size:clamp(1.8rem,4vw,2.6rem);max-width:640px" data-i18n="useH2">Built for programs already running Hooporia.</h2>
+  <div class="useGrid">
+    <div class="useCard">
+      <div class="emoji">🏕️</div>
+      <h4 data-i18n="useCard1H4">Basketball Camps</h4>
+      <p data-i18n="useCard1P">A headline station campers line up for.</p>
+    </div>
+    <div class="useCard">
+      <div class="emoji">🏫</div>
+      <h4 data-i18n="useCard2H4">PE &amp; Athletics</h4>
+      <p data-i18n="useCard2P">Every student shooting, not waiting for a turn.</p>
+    </div>
+    <div class="useCard">
+      <div class="emoji">💻</div>
+      <h4 data-i18n="useCard3H4">Digital Literacy</h4>
+      <p data-i18n="useCard3P">Real hand-tracking technology, hands-on.</p>
+    </div>
+    <div class="useCard">
+      <div class="emoji">🌆</div>
+      <h4 data-i18n="useCard4H4">After-School Programs</h4>
+      <p data-i18n="useCard4P">A physical, active alternative to a controller.</p>
+    </div>
+  </div>
+</section>
+
+<section class="ctaSection" id="contact">
+  <div class="ctaBox">
+    <h2 data-i18n="ctaH2">Let's put a real shot in your program.</h2>
+    <p data-i18n="ctaP">SHOOT VR is currently rolling out to select Hooporia partners. Reach out to talk timing, bundle pricing with Meta Quest hardware, and what it looks like for your camp, school, or program.</p>
+    <a class="btnPrimary" href="mailto:hello@hooporia.com" data-i18n="ctaBtn">Talk to us about SHOOT VR</a>
+  </div>
+</section>
+
+<footer>Hooporia · Gostar Digital LLC</footer>
+
+<script>
+var translations={
+  en:{
+    navCta:"Request a Demo",
+    heroEyebrow:"Hooporia · Next Generation Training",
+    heroLede:"Every Hooporia mode until now has trained the eyes and the reflexes. SHOOT VR trains the shot itself — a real basketball in your real hands, caught and released the way it happens on an actual court.",
+    heroBtn1:"Bring SHOOT VR to your program",
+    heroBtn2:"See how it works",
+    heroTag:"No controllers. No buttons. Just hands.",
+    contrastEyebrow:"The Difference",
+    contrastH2:"Everything up to now has been a hand on a screen.",
+    contrastOldLabel:"Screen Training",
+    contrastOldH3:"Tap the target",
+    contrastOldP:"Reaction Speed, Shooting Machine, and SHOOT's Three-Pointer and Floater modes train real skills — timing, tracking, decision-making — through a tap or a click.",
+    contrastNewH3:"Catch. Rise. Release.",
+    contrastNewP:"The headset sees your actual hands. You catch a real pass, bring the ball up, and release with a genuine shooting motion — the same mechanics as the shot itself, not a stand-in for it.",
+    howEyebrow:"How It Works",
+    howH2:"Built on hand tracking, not controllers.",
+    howCard1H3:"Catch",
+    howCard1P:"A pass arrives. Your headset's cameras track your fingers and palm in real time — you catch it with your actual hands, no trigger to hold.",
+    howCard2H3:"Rise",
+    howCard2P:"Bring the ball up into a shooting motion. The system reads your hand's real position and speed as you gather into the shot.",
+    howCard3H3:"Release",
+    howCard3P:"Let go at the right moment, with the right motion. Made or missed is decided by how you actually shot it — not a tap on a flat screen.",
+    hwEyebrow:"What You'll Need",
+    hwH2:"One headset. Hands already built in.",
+    hwCardH3:"Meta Quest — our recommended headset",
+    hwCardP:"SHOOT VR is built around Meta Quest's built-in hand tracking — no controllers, no extra sensors, no additional purchase beyond the headset itself.",
+    hwNote:"Ask us about bundle pricing — SHOOT VR plus recommended Meta Quest headsets, sized to your program.",
+    useEyebrow:"Where It Fits",
+    useH2:"Built for programs already running Hooporia.",
+    useCard1H4:"Basketball Camps",
+    useCard1P:"A headline station campers line up for.",
+    useCard2H4:"PE &amp; Athletics",
+    useCard2P:"Every student shooting, not waiting for a turn.",
+    useCard3H4:"Digital Literacy",
+    useCard3P:"Real hand-tracking technology, hands-on.",
+    useCard4H4:"After-School Programs",
+    useCard4P:"A physical, active alternative to a controller.",
+    ctaH2:"Let's put a real shot in your program.",
+    ctaP:"SHOOT VR is currently rolling out to select Hooporia partners. Reach out to talk timing, bundle pricing with Meta Quest hardware, and what it looks like for your camp, school, or program.",
+    ctaBtn:"Talk to us about SHOOT VR"
+  },
+  es:{
+    navCta:"Solicita una Demo",
+    heroEyebrow:"Hooporia · La Próxima Generación de Entrenamiento",
+    heroLede:"Cada modo de Hooporia hasta ahora ha entrenado los ojos y los reflejos. SHOOT VR entrena el tiro mismo — un balón de baloncesto de verdad en tus manos, atrapado y lanzado tal y como pasa en la cancha.",
+    heroBtn1:"Lleva SHOOT VR a tu programa",
+    heroBtn2:"Mira cómo funciona",
+    heroTag:"Sin controles. Sin botones. Solo las manos.",
+    contrastEyebrow:"La Diferencia",
+    contrastH2:"Todo lo que hemos hecho hasta ahora ha sido con la mano en una pantalla.",
+    contrastOldLabel:"Entrenamiento en Pantalla",
+    contrastOldH3:"Toca el objetivo",
+    contrastOldP:"Reaction Speed, Shooting Machine, y los modos Three-Pointer y Floater de SHOOT entrenan destrezas reales — timing, seguimiento visual, toma de decisiones — con un toque o un clic.",
+    contrastNewH3:"Atrapa. Sube. Suelta.",
+    contrastNewP:"El headset ve tus manos de verdad. Atrapas un pase real, subes el balón, y sueltas con un movimiento de tiro genuino — la misma mecánica del tiro, no una imitación.",
+    howEyebrow:"Cómo Funciona",
+    howH2:"Hecho con seguimiento de manos, no con controles.",
+    howCard1H3:"Atrapar",
+    howCard1P:"Llega un pase. Las cámaras del headset siguen tus dedos y tu palma en tiempo real — lo atrapas con tus propias manos, sin gatillo que apretar.",
+    howCard2H3:"Subir",
+    howCard2P:"Subes el balón hacia el movimiento de tiro. El sistema lee la posición y la velocidad real de tu mano mientras te preparas para tirar.",
+    howCard3H3:"Soltar",
+    howCard3P:"Sueltas en el momento correcto, con el movimiento correcto. Si encesta o no se decide por cómo tiraste de verdad — no por un toque en una pantalla plana.",
+    hwEyebrow:"Lo Que Necesitas",
+    hwH2:"Un solo headset. Las manos ya vienen incluidas.",
+    hwCardH3:"Meta Quest — el headset que recomendamos",
+    hwCardP:"SHOOT VR está hecho para el seguimiento de manos que ya trae Meta Quest — sin controles, sin sensores extra, sin comprar nada más allá del headset.",
+    hwNote:"Pregúntanos por precios en combo — SHOOT VR más los Meta Quest recomendados, al tamaño de tu programa.",
+    useEyebrow:"Dónde Encaja",
+    useH2:"Hecho para programas que ya usan Hooporia.",
+    useCard1H4:"Campamentos de Baloncesto",
+    useCard1P:"La estación estrella en la que los campistas hacen fila para entrar.",
+    useCard2H4:"Educación Física y Deportes",
+    useCard2P:"Todos los estudiantes tirando al aro, nadie esperando su turno.",
+    useCard3H4:"Alfabetización Digital",
+    useCard3P:"Tecnología real de seguimiento de manos, de primera mano.",
+    useCard4H4:"Programas Después de Clases",
+    useCard4P:"Una alternativa física y activa a un control de videojuego.",
+    ctaH2:"Vamos a poner un tiro real en tu programa.",
+    ctaP:"SHOOT VR se está lanzando ahora mismo con socios selectos de Hooporia. Escríbenos para hablar de tiempo, precios en combo con los Meta Quest, y cómo se vería en tu campamento, escuela o programa.",
+    ctaBtn:"Habla con nosotros sobre SHOOT VR"
+  }
+};
+
+var heroH1Translations={
+  en:'The ball is in your hands<br><span class="accent">now.</span>',
+  es:'El balón está en tus manos<br><span class="accent">ahora.</span>'
+};
+
+function setLanguage(lang){
+  var dict=translations[lang];
+  var els=document.querySelectorAll("[data-i18n]");
+  var i;
+  for(i=0;i<els.length;i++){
+    var key=els[i].getAttribute("data-i18n");
+    if(dict[key]){els[i].innerHTML=dict[key];}
+  }
+  var htmlEls=document.querySelectorAll("[data-i18n-html]");
+  for(i=0;i<htmlEls.length;i++){
+    var hkey=htmlEls[i].getAttribute("data-i18n-html");
+    if(hkey==="heroH1"){htmlEls[i].innerHTML=heroH1Translations[lang];}
+  }
+  document.getElementById("langEnBtn").className="langBtn"+(lang==="en"?" active":"");
+  document.getElementById("langEsBtn").className="langBtn"+(lang==="es"?" active":"");
+  document.documentElement.setAttribute("lang",lang);
+}
+
+document.getElementById("langEnBtn").addEventListener("click",function(){setLanguage("en");});
+document.getElementById("langEsBtn").addEventListener("click",function(){setLanguage("es");});
+</script>
+
+</body>
+</html>
