@@ -597,7 +597,7 @@ function selectShotType(type){
 
 function updateShotTypeUI(){
   if(selectedShotType==="floater"){
-    modeInfo.textContent="Floater — one continuous drive to the rim. Release too early and it's short; too late and you're contested. There's one clean window in between.";
+    modeInfo.textContent="Floater — one continuous drive to the rim. Tap the ball while it glows green for a clean release. Too early or too late and it's a miss.";
     machineOptions.className="section hidden";
     startBtn.textContent="START FLOATER";
   }else{
@@ -745,11 +745,11 @@ var floater={
   tapLocked:false
 };
 var FLOATER_TOTAL_SHOTS=50;
-var FLOATER_DRIVE_MS=1700;
+var FLOATER_DRIVE_MS=2000;
 var FLOATER_FLIGHT_MS=260;
 var FLOATER_PACE_MS=550;
-var FLOATER_SWEET_MIN=.52;
-var FLOATER_SWEET_MAX=.74;
+var FLOATER_SWEET_MIN=.42;
+var FLOATER_SWEET_MAX=.82;
 var FLOATER_BALL_HIT_RADIUS_MIN=24;
 var FLOATER_ORIGIN_Y_FRAC=.90;
 
@@ -1016,10 +1016,23 @@ function updateFloater(t){
   }
 }
 
-function drawBallAt(x,y,scale,alpha){
+function drawBallAt(x,y,scale,alpha,glowColor){
   var r=Math.max(10,hoop.rx*.5)*scale;
 
   ctx.save();
+
+  if(glowColor){
+    ctx.save();
+    ctx.globalAlpha=alpha*.55;
+    ctx.shadowColor=glowColor;
+    ctx.shadowBlur=r*1.1;
+    ctx.fillStyle=glowColor;
+    ctx.beginPath();
+    ctx.arc(x,y,r*1.18,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.globalAlpha=alpha;
 
   var grad=ctx.createRadialGradient(x-r*.3,y-r*.35,r*.1,x,y,r);
@@ -1058,7 +1071,8 @@ function drawMachineBall(t){
 
 function drawFloaterBall(t){
   var scale=.45+.55*floater.ballProgress;
-  drawBallAt(floater.ballX,floater.ballY,scale,.55+.45*floater.ballProgress);
+  var inSweetSpot=floater.phase==="driving"&&floater.ballProgress>=FLOATER_SWEET_MIN&&floater.ballProgress<=FLOATER_SWEET_MAX;
+  drawBallAt(floater.ballX,floater.ballY,scale,.55+.45*floater.ballProgress,inSweetSpot?"#46ff78":null);
 }
 
 function createParticles(x,y,success){
