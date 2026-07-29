@@ -742,7 +742,8 @@ var floater={
   tapProgress:0,
   pendingMade:false,
   pendingReason:"",
-  tapLocked:false
+  tapLocked:false,
+  originX:0
 };
 var FLOATER_TOTAL_SHOTS=50;
 var FLOATER_DRIVE_MS=2000;
@@ -892,8 +893,14 @@ function updateMachine(t){
   }
 }
 
+var FLOATER_DRIVE_LANES=[.22,.36,.5,.64,.78];
+
+function pickFloaterOriginX(){
+  return W*FLOATER_DRIVE_LANES[Math.floor(Math.random()*FLOATER_DRIVE_LANES.length)];
+}
+
 function floaterOrigin(){
-  return{x:hoop.baseX,y:H*FLOATER_ORIGIN_Y_FRAC};
+  return{x:floater.originX,y:H*FLOATER_ORIGIN_Y_FRAC};
 }
 
 function floaterBallHitRadius(){
@@ -903,6 +910,7 @@ function floaterBallHitRadius(){
 function showFloaterTarget(t){
   hoop.x=hoop.baseX;
   hoop.y=hoop.baseY;
+  floater.originX=pickFloaterOriginX();
   var origin=floaterOrigin();
   floater.phase="driving";
   floater.driveStartAt=t;
