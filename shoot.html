@@ -222,7 +222,11 @@ select,input{
         </div>
 
         <div class="section" id="modeSection">
-          <div class="sectionTitle">Three-Pointer</div>
+          <div class="sectionTitle">Shot type</div>
+          <div class="choiceGrid" style="grid-template-columns:1fr 1fr">
+            <button class="choiceBtn active" data-shottype="three" type="button">THREE-POINTER</button>
+            <button class="choiceBtn" data-shottype="floater" type="button">FLOATER</button>
+          </div>
           <div id="modeInfo">Three-point catch and shoot. 50 total shots, rotating randomly between 5 spots beyond the arc — corner, wing, top, wing, corner.</div>
         </div>
 
@@ -267,6 +271,7 @@ var profileStats=document.getElementById("profileStats");
 
 var modeInfo=document.getElementById("modeInfo");
 var machineInfo=document.getElementById("machineInfo");
+var machineOptions=document.getElementById("machineOptions");
 var shotInfo=document.getElementById("shotInfo");
 
 var hudPlayer=document.getElementById("hudPlayer");
@@ -294,6 +299,7 @@ var MODES={
 
 var W=0,H=0,DPR=1;
 var selectedMode="machine";
+var selectedShotType="three";
 var activeProfile="Guest";
 var profiles=loadProfiles();
 
@@ -312,6 +318,8 @@ var score=0;
 var attempts=0;
 var streak=0;
 var bestStreak=0;
+var floaterShortCount=0;
+var floaterContestedCount=0;
 
 var totalReaction=0;
 var reactionCount=0;
@@ -379,8 +387,15 @@ function blankMachineStats(){
   };
 }
 
+function blankFloaterStats(){
+  return{
+    rounds:0,totalShots:0,totalMakes:0,bestStreak:0,bestAccuracy:0,fastestReaction:0,
+    shortCount:0,contestedCount:0
+  };
+}
+
 function blankPlayer(){
-  return{machine:blankMachineStats()};
+  return{machine:blankMachineStats(),floater:blankFloaterStats()};
 }
 
 function defaultData(){
@@ -390,7 +405,9 @@ function defaultData(){
 function ensurePlayer(player){
   if(!player){player=blankPlayer();}
   if(!player.machine){player.machine=blankMachineStats();}
+  if(!player.floater){player.floater=blankFloaterStats();}
   ensureMachine(player.machine);
+  ensureFloater(player.floater);
   return player;
 }
 
@@ -401,6 +418,17 @@ function ensureMachine(s){
   if(typeof s.bestStreak!=="number"){s.bestStreak=0;}
   if(typeof s.bestAccuracy!=="number"){s.bestAccuracy=0;}
   if(typeof s.fastestReaction!=="number"){s.fastestReaction=0;}
+}
+
+function ensureFloater(s){
+  if(typeof s.rounds!=="number"){s.rounds=0;}
+  if(typeof s.totalShots!=="number"){s.totalShots=0;}
+  if(typeof s.totalMakes!=="number"){s.totalMakes=0;}
+  if(typeof s.bestStreak!=="number"){s.bestStreak=0;}
+  if(typeof s.bestAccuracy!=="number"){s.bestAccuracy=0;}
+  if(typeof s.fastestReaction!=="number"){s.fastestReaction=0;}
+  if(typeof s.shortCount!=="number"){s.shortCount=0;}
+  if(typeof s.contestedCount!=="number"){s.contestedCount=0;}
 }
 
 function migrateLegacy(){
@@ -532,21 +560,51 @@ function updateProfileStats(){
   var player=ensurePlayer(profiles.players[activeProfile]);
   profiles.players[activeProfile]=player;
 
-  var m=player.machine;
-  profileStats.innerHTML=
-    "<strong>"+escapeHtml(activeProfile)+"</strong> · Three-Pointer rounds "+m.rounds+
-    " · Career best accuracy "+m.bestAccuracy+"%"+
-    " · Best streak "+m.bestStreak+
-    " · Fastest release "+formatMs(m.fastestReaction);
+  if(selectedShotType==="floater"){
+    var fl=player.floater;
+    profileStats.innerHTML=
+      "<strong>"+escapeHtml(activeProfile)+"</strong> · Floater rounds "+fl.rounds+
+      " · Career best accuracy "+fl.bestAccuracy+"%"+
+      " · Best streak "+fl.bestStreak+
+      " · Fastest clean release "+formatMs(fl.fastestReaction);
+  }else{
+    var m=player.machine;
+    profileStats.innerHTML=
+      "<strong>"+escapeHtml(activeProfile)+"</strong> · Three-Pointer rounds "+m.rounds+
+      " · Career best accuracy "+m.bestAccuracy+"%"+
+      " · Best streak "+m.bestStreak+
+      " · Fastest release "+formatMs(m.fastestReaction);
+  }
 }
 
 function selectMode(mode){
   if(!MODES[mode]){return;}
   selectedMode=mode;
   modeInfo.textContent=MODES[mode].description;
-  startBtn.textContent="START SHOOTING MACHINE";
+  updateShotTypeUI();
   updateProfileStats();
   updateHud();
+}
+
+function selectShotType(type){
+  if(type!=="three"&&type!=="floater"){return;}
+  selectedShotType=type;
+  setActiveButtons("[data-shottype]","data-shottype",type);
+  updateShotTypeUI();
+  updateProfileStats();
+  updateHud();
+}
+
+function updateShotTypeUI(){
+  if(selectedShotType==="floater"){
+    modeInfo.textContent="Floater — one continuous drive to the rim. Release too early and it's short; too late and you're contested. There's one clean window in between.";
+    machineOptions.className="section hidden";
+    startBtn.textContent="START FLOATER";
+  }else{
+    modeInfo.textContent="Three-point catch and shoot. 50 total shots, rotating randomly between 5 spots beyond the arc — corner, wing, top, wing, corner.";
+    machineOptions.className="section";
+    startBtn.textContent="START THREE-POINTER";
+  }
 }
 
 function setActiveButtons(selector,attribute,value){
@@ -611,18 +669,24 @@ function elapsedSeconds(t){
 function updateHud(t){
   t=typeof t==="number"?t:now();
   hudPlayer.textContent=activeProfile;
-  hudTime.textContent="Spot "+(machine.spotIndex+1)+"/5";
   hudScore.textContent=score;
   hudAttempts.textContent=attempts;
   hudStreak.textContent=streak;
   hudAccuracy.textContent=attempts?Math.round(score/attempts*100)+"%":"0%";
-
-  hudSettingLabel.textContent="Spot";
-  hudSetting.textContent=MACHINE_SPOTS.length?MACHINE_SPOTS[machine.spotIndex].label:"--";
   hudScoreLabel.textContent="Makes";
   hudAttemptLabel.textContent="Shots";
   hudMetricLabel.textContent="Fastest";
   hudMetric.textContent=fastestReaction?Math.round(fastestReaction)+" ms":"--";
+
+  if(selectedShotType==="floater"){
+    hudTime.textContent=attempts+"/"+FLOATER_TOTAL_SHOTS;
+    hudSettingLabel.textContent="Shot";
+    hudSetting.textContent="Floater";
+  }else{
+    hudTime.textContent="Spot "+(machine.spotIndex+1)+"/5";
+    hudSettingLabel.textContent="Spot";
+    hudSetting.textContent=MACHINE_SPOTS.length?MACHINE_SPOTS[machine.spotIndex].label:"--";
+  }
 }
 
 function distance(x1,y1,x2,y2){
@@ -662,6 +726,32 @@ function chooseDynamicPosition(){
 var MACHINE_PACE_MS=550;
 var MACHINE_TOTAL_SHOTS=50;
 var MACHINE_BALL_HIT_RADIUS_MIN=22;
+
+// ── FLOATER — a single continuous drive toward the rim. The ball moves
+//    on its own the whole time; there's no separate catch step. Tap it
+//    too early and the shot comes up short; tap too late and you're
+//    right on top of the rim, contested; there's one clean window
+//    partway through the drive where the release is soft and clean.
+var floater={
+  phase:"idle",        // "idle" | "driving" | "flying"
+  driveStartAt:0,
+  flightStartAt:0,
+  ballX:0,
+  ballY:0,
+  ballProgress:0,
+  tapProgress:0,
+  pendingMade:false,
+  pendingReason:"",
+  tapLocked:false
+};
+var FLOATER_TOTAL_SHOTS=50;
+var FLOATER_DRIVE_MS=1700;
+var FLOATER_FLIGHT_MS=260;
+var FLOATER_PACE_MS=550;
+var FLOATER_SWEET_MIN=.52;
+var FLOATER_SWEET_MAX=.74;
+var FLOATER_BALL_HIT_RADIUS_MIN=24;
+var FLOATER_ORIGIN_Y_FRAC=.90;
 
 function machineBallHitRadius(){
   return Math.max(MACHINE_BALL_HIT_RADIUS_MIN,hoop.rx*.5);
@@ -786,7 +876,7 @@ function resolveMachineShot(t){
 }
 
 function updateMachine(t){
-  if(selectedMode!=="machine"||!gameRunning||!roundStarted){return;}
+  if(selectedMode!=="machine"||selectedShotType!=="three"||!gameRunning||!roundStarted){return;}
   if(machine.phase==="idle"&&t>=machine.nextAt&&attempts<MACHINE_TOTAL_SHOTS){
     showMachineTarget(t);
   }else if(machine.phase==="flying"){
@@ -802,14 +892,135 @@ function updateMachine(t){
   }
 }
 
-function drawMachineBall(t){
-  var scale=.45+.55*machine.ballProgress;
+function floaterOrigin(){
+  return{x:hoop.baseX,y:H*FLOATER_ORIGIN_Y_FRAC};
+}
+
+function floaterBallHitRadius(){
+  return Math.max(FLOATER_BALL_HIT_RADIUS_MIN,hoop.rx*.55);
+}
+
+function showFloaterTarget(t){
+  hoop.x=hoop.baseX;
+  hoop.y=hoop.baseY;
+  var origin=floaterOrigin();
+  floater.phase="driving";
+  floater.driveStartAt=t;
+  floater.ballX=origin.x;
+  floater.ballY=origin.y;
+  floater.ballProgress=0;
+  attempts++;
+  setMessage("Driving — release the floater!");
+  updateHud(t);
+}
+
+function updateFloaterDrivePosition(t){
+  var origin=floaterOrigin();
+  var progress=Math.max(0,Math.min(1,(t-floater.driveStartAt)/FLOATER_DRIVE_MS));
+  floater.ballX=origin.x+(hoop.x-origin.x)*progress;
+  floater.ballY=origin.y+(hoop.y-origin.y)*progress;
+  floater.ballProgress=progress;
+  return progress;
+}
+
+function handleFloaterClick(x,y){
+  if(selectedMode!=="machine"||selectedShotType!=="floater"||!gameRunning||!roundStarted||!acceptingInput||floater.phase!=="driving"||floater.tapLocked){return;}
+  if(distance(x,y,floater.ballX,floater.ballY)>floaterBallHitRadius()){return;}
+
+  var t=now();
+  floater.tapLocked=true;
+  setTimeout(function(){floater.tapLocked=false;},40);
+
+  var progress=floater.ballProgress;
+  floater.tapProgress=progress;
+
+  if(progress<FLOATER_SWEET_MIN){
+    floater.pendingMade=false;
+    floater.pendingReason="short";
+  }else if(progress>FLOATER_SWEET_MAX){
+    floater.pendingMade=false;
+    floater.pendingReason="contested";
+  }else{
+    floater.pendingMade=true;
+    floater.pendingReason="clean";
+  }
+
+  floater.phase="flying";
+  floater.flightStartAt=t;
+  setMessage("Shot away!");
+}
+
+function resolveFloaterShot(t){
+  var made=floater.pendingMade;
+  var reason=floater.pendingReason;
+
+  clickMarker.x=hoop.x;
+  clickMarker.y=hoop.y;
+  clickMarker.until=t+360;
+  clickMarker.success=made;
+
+  if(made){
+    score++;
+    streak++;
+    if(streak>bestStreak){bestStreak=streak;}
+    var releaseMs=floater.tapProgress*FLOATER_DRIVE_MS;
+    totalReaction+=releaseMs;
+    reactionCount++;
+    if(!fastestReaction||releaseMs<fastestReaction){fastestReaction=releaseMs;}
+    resultText="MADE IT";
+    resultUntil=t+520;
+    createParticles(hoop.x,hoop.y,true);
+    beep(true);
+    setMessage("Soft touch — nothing but net!");
+  }else{
+    streak=0;
+    if(reason==="short"){floaterShortCount++;}else{floaterContestedCount++;}
+    resultText=reason==="short"?"TOO FAR":"CONTESTED";
+    resultUntil=t+520;
+    createParticles(hoop.x,hoop.y,false);
+    beep(false);
+    setMessage(reason==="short"?"Released too early — came up short.":"Released too late — contested at the rim.");
+  }
+
+  updateHud(t);
+
+  floater.phase="idle";
+  if(attempts>=FLOATER_TOTAL_SHOTS){
+    setTimeout(finishRound,400);
+  }else{
+    machine.nextAt=t+FLOATER_PACE_MS;
+  }
+}
+
+function updateFloater(t){
+  if(selectedMode!=="machine"||selectedShotType!=="floater"||!gameRunning||!roundStarted){return;}
+  if(floater.phase==="idle"&&t>=machine.nextAt&&attempts<FLOATER_TOTAL_SHOTS){
+    showFloaterTarget(t);
+  }else if(floater.phase==="driving"){
+    var progress=updateFloaterDrivePosition(t);
+    if(progress>=1){
+      // Drove all the way to the rim without a release — a missed opportunity.
+      floater.pendingMade=false;
+      floater.pendingReason="contested";
+      floater.tapProgress=1;
+      floater.phase="flying";
+      floater.flightStartAt=t;
+      setMessage("Never released — traveled into the defense.");
+    }
+  }else if(floater.phase==="flying"){
+    var flightProgress=Math.max(0,Math.min(1,(t-floater.flightStartAt)/FLOATER_FLIGHT_MS));
+    floater.ballProgress=1-flightProgress*.5;
+    if(flightProgress>=1){
+      resolveFloaterShot(t);
+    }
+  }
+}
+
+function drawBallAt(x,y,scale,alpha){
   var r=Math.max(10,hoop.rx*.5)*scale;
-  var x=machine.ballX;
-  var y=machine.ballY;
 
   ctx.save();
-  ctx.globalAlpha=.55+.45*machine.ballProgress;
+  ctx.globalAlpha=alpha;
 
   var grad=ctx.createRadialGradient(x-r*.3,y-r*.35,r*.1,x,y,r);
   grad.addColorStop(0,"#ffb052");
@@ -838,6 +1049,16 @@ function drawMachineBall(t){
   ctx.stroke();
 
   ctx.restore();
+}
+
+function drawMachineBall(t){
+  var scale=.45+.55*machine.ballProgress;
+  drawBallAt(machine.ballX,machine.ballY,scale,.55+.45*machine.ballProgress);
+}
+
+function drawFloaterBall(t){
+  var scale=.45+.55*floater.ballProgress;
+  drawBallAt(floater.ballX,floater.ballY,scale,.55+.45*floater.ballProgress);
 }
 
 function createParticles(x,y,success){
@@ -903,6 +1124,8 @@ function startRound(e){
   totalReaction=0;
   reactionCount=0;
   fastestReaction=0;
+  floaterShortCount=0;
+  floaterContestedCount=0;
 
   clickMarker.until=0;
   particles=[];
@@ -921,6 +1144,15 @@ function startRound(e){
   machine.pendingMade=false;
   machine.pendingHitRim=false;
   resetMachineSpotStats();
+
+  floater.phase="idle";
+  floater.driveStartAt=0;
+  floater.flightStartAt=0;
+  floater.ballProgress=0;
+  floater.tapProgress=0;
+  floater.pendingMade=false;
+  floater.pendingReason="";
+  floater.tapLocked=false;
 
   gameRunning=true;
   roundStarted=false;
@@ -949,7 +1181,11 @@ function beginTimedRound(t){
   roundEnd=t+999999999;
 
   machine.nextAt=t+250;
-  setMessage("Watch for the first feed.");
+  if(selectedShotType==="floater"){
+    setMessage("Get ready to drive...");
+  }else{
+    setMessage("Watch for the first feed.");
+  }
   updateHud(t);
 }
 
@@ -982,6 +1218,43 @@ function finishRound(){
 
   var player=ensurePlayer(profiles.players[activeProfile]);
 
+  if(selectedShotType==="floater"){
+    var fl=player.floater;
+    var floaterAccuracy=attempts?Math.round(score/attempts*100):0;
+
+    fl.rounds++;
+    fl.totalShots+=attempts;
+    fl.totalMakes+=score;
+    fl.shortCount+=floaterShortCount;
+    fl.contestedCount+=floaterContestedCount;
+    if(bestStreak>fl.bestStreak){fl.bestStreak=bestStreak;}
+    if(floaterAccuracy>fl.bestAccuracy){fl.bestAccuracy=floaterAccuracy;}
+    if(fastestReaction&&(!fl.fastestReaction||fastestReaction<fl.fastestReaction)){
+      fl.fastestReaction=fastestReaction;
+    }
+
+    resultBox.innerHTML=
+      "<strong>Floater complete</strong><br>"+
+      "Makes: "+score+" of "+attempts+" · "+floaterAccuracy+"%<br>"+
+      "Best streak: "+bestStreak+" · Fastest clean release: "+formatMs(fastestReaction)+"<br>"+
+      "<span style=\"font-size:.78em;opacity:.85\">Too far: "+floaterShortCount+" · Contested: "+floaterContestedCount+"</span>";
+
+    profiles.players[activeProfile]=player;
+    profiles.active=activeProfile;
+    saveProfiles();
+
+    resultBox.style.display="block";
+    startBtn.textContent="PLAY FLOATER AGAIN";
+    overlay.style.display="flex";
+    backBtn.style.display="none";
+    hud.style.display="none";
+    updateProfileStats();
+
+    var exitFull2=document.exitFullscreen||document.mozCancelFullScreen||document.webkitExitFullscreen;
+    if(exitFull2){try{exitFull2.call(document);}catch(err){}}
+    return;
+  }
+
   var m=player.machine;
   var machineAccuracy=attempts?Math.round(score/attempts*100):0;
 
@@ -1010,7 +1283,7 @@ function finishRound(){
   saveProfiles();
 
   resultBox.style.display="block";
-  startBtn.textContent="PLAY SHOOTING MACHINE AGAIN";
+  startBtn.textContent="PLAY THREE-POINTER AGAIN";
   overlay.style.display="flex";
   backBtn.style.display="none";
   hud.style.display="none";
@@ -1031,6 +1304,7 @@ function returnToSelection(e){
   acceptingInput=false;
   machine.visible=false;
   machine.phase="idle";
+  floater.phase="idle";
   particles=[];
   resultText="";
   clickMarker.until=0;
@@ -1039,7 +1313,7 @@ function returnToSelection(e){
   resultBox.style.display="none";
   backBtn.style.display="none";
   hud.style.display="none";
-  startBtn.textContent="START SHOOTING MACHINE";
+  updateShotTypeUI();
   setMessage("Choose a player, training mode, and round time.");
   updateProfileStats();
 
@@ -1203,14 +1477,19 @@ function frame(t){
   ctx.clearRect(0,0,W,H);
   updateRound(t);
   updateMachine(t);
+  updateFloater(t);
 
   drawCourt();
 
-  if(machine.visible){
+  if(selectedShotType==="three"&&machine.visible){
     drawBackboardAndRim(t,true);
   }
-  if(machine.visible&&(machine.phase==="catching"||machine.phase==="flying")){
+  if(selectedShotType==="three"&&machine.visible&&(machine.phase==="catching"||machine.phase==="flying")){
     drawMachineBall(t);
+  }
+  if(selectedShotType==="floater"&&(floater.phase==="driving"||floater.phase==="flying")){
+    drawBackboardAndRim(t,true);
+    drawFloaterBall(t);
   }
 
   drawClickMarker(t);
@@ -1224,7 +1503,11 @@ function frame(t){
 function handleCanvasClick(e){
   pointerPosition(e);
   if(!gameRunning||!roundStarted||!acceptingInput){return;}
-  handleMachineClick(cursor.x,cursor.y);
+  if(selectedShotType==="floater"){
+    handleFloaterClick(cursor.x,cursor.y);
+  }else{
+    handleMachineClick(cursor.x,cursor.y);
+  }
   if(e.preventDefault){e.preventDefault();}
 }
 
@@ -1251,6 +1534,13 @@ for(i=0;i<machineBpmButtons.length;i++){
   },false);
 }
 
+var shotTypeButtons=document.querySelectorAll("[data-shottype]");
+for(i=0;i<shotTypeButtons.length;i++){
+  shotTypeButtons[i].addEventListener("click",function(){
+    selectShotType(this.getAttribute("data-shottype"));
+  },false);
+}
+
 startBtn.addEventListener("click",startRound,false);
 backBtn.addEventListener("click",returnToSelection,false);
 backBtn.addEventListener("touchstart",returnToSelection,false);
@@ -1266,6 +1556,7 @@ resize();
 refreshProfiles();
 selectMachineBpm(80);
 selectMode("machine");
+selectShotType("three");
 updateHud();
 window.requestAnimationFrame(frame);
 
