@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hooporia</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  background:radial-gradient(circle at 16% 5%,rgba(255,107,53,.15),transparent 30%),linear-gradient(180deg,#0a0300,#050100);
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+#panel{
+  width:100%;
+  max-width:440px;
+  text-align:center;
+}
+h1{
+  font-size:2rem;
+  letter-spacing:.02em;
+  margin-bottom:2px;
+}
+h1 span{color:#f37418}
+.subtitle{
+  font-size:.85rem;
+  color:#c9b8a8;
+  margin-bottom:32px;
+  letter-spacing:.03em;
+}
+.gameList{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.gameLink{
+  display:block;
+  padding:16px 18px;
+  border-radius:14px;
+  border:1px solid rgba(255,126,32,.35);
+  background:rgba(255,255,255,.04);
+  color:#fff;
+  text-decoration:none;
+  font-weight:700;
+  font-size:1.02rem;
+  letter-spacing:.02em;
+  text-align:left;
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.gameLink:hover{
+  background:rgba(255,126,32,.12);
+  border-color:rgba(255,126,32,.7);
+}
+.gameLink:active{transform:scale(.98)}
+.gameLink .tag{
+  display:block;
+  font-size:.72rem;
+  font-weight:400;
+  color:#c9b8a8;
+  margin-top:3px;
+  letter-spacing:.01em;
+}
+footer{
+  margin-top:32px;
+  font-size:.72rem;
+  color:#6b5d52;
+  letter-spacing:.02em;
+}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>Basketball <span>Hooporia</span></h1>
+  <div class="subtitle">Choose a training mode</div>
+
+  <div class="gameList">
+    <a class="gameLink" href="shooting-machine.html">
+      Shooting Machine
+      <span class="tag">Catch the pass, then shoot — 5 spots around the arc</span>
+    </a>
+    <a class="gameLink" href="basketball-recall.html">
+      Basketball Recall
+      <span class="tag">Watch a sequence, then tap it back in order</span>
+    </a>
+    <a class="gameLink" href="basketball-reflex.html">
+      Basketball Reflex
+      <span class="tag">Find and tap every spot that flashed — order doesn't matter</span>
+    </a>
+    <a class="gameLink" href="basketball-replay.html">
+      Basketball Replay
+      <span class="tag">Watch a sequence play out, then replay it back</span>
+    </a>
+    <a class="gameLink" href="basketball-recognition.html">
+      Basketball Recognition
+      <span class="tag">Spot which cell changed between two patterns</span>
+    </a>
+  </div>
+
+  <footer>Gostar Digital LLC</footer>
+</div>
+
+</body>
+</html>
