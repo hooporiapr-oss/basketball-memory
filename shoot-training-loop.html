@@ -64,18 +64,18 @@ video{width:100%;height:100%;object-fit:cover;display:block}
 
 <div id="stage">
   <div id="hud">
-    <div id="repCount">Round <span id="repNow">1</span> / <span id="repTotal">5</span></div>
+    <div id="repCount">Rep <span id="repNow">1</span> / <span id="repTotal">10</span></div>
     <div id="modeLabel">SHOOT · Visual Training</div>
   </div>
 
   <video id="trainingVideo" playsinline muted>
-    <source src="shoot-swish-02.mp4" type="video/mp4">
+    <source src="shoot-swish-05.mp4" type="video/mp4">
   </video>
 
   <div id="missingNote" style="display:none">
     <div style="font-size:2rem">🏀</div>
     <div><strong>No video loaded yet</strong></div>
-    <div>Drop your generated clip in this same folder, named <code>shoot-swish-02.mp4</code>, and reload this page.</div>
+    <div>Drop your generated clip in this same folder, named <code>shoot-swish-05.mp4</code>, and reload this page.</div>
   </div>
 
   <div id="startOverlay">
@@ -83,9 +83,9 @@ video{width:100%;height:100%;object-fit:cover;display:block}
   </div>
 
   <div id="doneOverlay">
-    <h2>5 rounds complete — 10 shots</h2>
+    <h2>10 reps complete</h2>
     <p>That's one full visualization set. Run it again, or step away and come back for another round later.</p>
-    <button id="restartBtn" type="button">↺ Run 5 More</button>
+    <button id="restartBtn" type="button">↺ Run 10 More</button>
   </div>
 </div>
 
@@ -99,7 +99,7 @@ var missingNote=document.getElementById("missingNote");
 var startOverlay=document.getElementById("startOverlay");
 var startBtn=document.getElementById("startBtn");
 
-var TOTAL_REPS=5;
+var TOTAL_REPS=10;
 var currentRep=1;
 
 function requestFullscreenOnce(){
