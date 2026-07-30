@@ -130,7 +130,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
     <div class="rbb-top-box"><div class="rbb-top-label" id="reflex_hRdLbl">Targets</div><div class="rbb-top-val" id="reflex_hRd">3</div></div>
     <div class="rbb-top-box"><div class="rbb-top-label" id="reflex_hLvLbl">Best</div><div class="rbb-top-val" id="reflex_hLv">0</div></div>
     <div class="rbb-top-box"><div class="rbb-top-label">Streak</div><div class="rbb-top-val" id="reflex_hSt">0</div></div>
-    <div class="rbb-top-box"><div class="rbb-top-label">Repeats</div><div class="rbb-top-val" id="reflex_hRep">0</div></div>
+    <div class="rbb-top-box"><div class="rbb-top-label">Attempt</div><div class="rbb-top-val" id="reflex_hAtt">1/3</div></div>
     <div class="rbb-top-box"><div class="rbb-top-label">Timer</div><div class="rbb-top-val" id="reflex_hPf">--</div></div>
   </div>
   <div class="rbb-clockbar"><div class="rbb-clockbar-fill" id="reflex_clockFill" style="width:0%"></div></div>
@@ -140,7 +140,6 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
   <div class="rbb-bottombar">
     <button class="rbb-bot-btn" id="reflex_menuBtn">← Home<span>Settings</span></button>
     <button class="rbb-bot-btn rbb-start-btn" id="reflex_actBtn">LET'S GO</button>
-    <button class="rbb-bot-btn rbb-repeat-btn" id="reflex_repeatBtn">↻ REPEAT<span>1 per round</span></button>
     <button class="rbb-bot-btn" id="reflex_restartBtn" style="display:none;visibility:hidden;pointer-events:none;width:0;height:0;padding:0;margin:0;border:0;overflow:hidden;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);color:#8892a0;font-size:.8rem" onclick="restartGame()">↺ Restart<span style="color:#555">Level 1</span></button>
   </div>
 </div>
@@ -247,7 +246,7 @@ function buildCourt(){var court=$('reflex_court');court.innerHTML='';cells=[];fo
 function cellSt(i,st){cells[i].className='rbb-cell';if(st)cells[i].classList.add(st)}
 function resetCells(){cells.forEach((_,i)=>cellSt(i))}
 
-var g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0,totalRepeats:0};
+var g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
 function updateHUD(){
   $('reflex_hSc').textContent=g.sc;
   $('reflex_hFind').textContent=bpm+' BPM';
@@ -263,7 +262,7 @@ function updateHUD(){
     $('reflex_hLv').textContent=g.best;
   }
   $('reflex_hSt').textContent=g.streak;
-  $('reflex_hRep').textContent=g.totalRepeats;
+  $('reflex_hAtt').textContent=(attemptNum+1)+'/3';
   $('reflex_ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('reflex_msg');el.textContent=txt;el.className='rbb-msg-bar '+(cls||'rbb-watch')}
@@ -288,7 +287,7 @@ function startRecallTimer(){
 }
 function stopRecallTimer(){if(recallRAF){cancelAnimationFrame(recallRAF);recallRAF=null}}
 
-var phase='idle',targets=[],found=[],timers=[],firstTapDone=false,repeatUsedThisRound=false;
+var phase='idle',targets=[],found=[],timers=[],firstTapDone=false,attemptNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 
 function revealTargets(cb){
@@ -300,34 +299,34 @@ function revealTargets(cb){
   },showMs));
 }
 
-function useRepeat(){
-  if(phase!=='tapping'||repeatUsedThisRound)return;
-  repeatUsedThisRound=true;
-  g.totalRepeats++;
-  updateHUD();
-  $('reflex_repeatBtn').disabled=true;
+// Automatically re-shows the SAME targets after a wrong tap or timeout —
+// up to two extra chances per round before the game actually ends.
+// attemptNum: 0 = first try (full points), 1 = after 1st auto-repeat
+// (5 points), 2 = after 2nd auto-repeat (1 point). Failing attempt 2 ends
+// the game for real.
+function repeatRound(){
   clrT();stopFullStrobe();stopRecallTimer();
-  phase='showing';found=[];
+  phase='showing';found=[];firstTapDone=false;
   resetCells();
+  updateHUD();
   $('reflex_clockFill').style.width='100%';$('reflex_hPf').textContent='--';
-  msg('↻ REPEAT — WATCH!','rbb-watch');
+  msg('↻ TRY AGAIN — WATCH!','rbb-watch');
   timers.push(setTimeout(function(){
     revealTargets(function(){
-      msg('⚡ FIND THEM ALL! (5 PTS)','rbb-go');
+      var pts=attemptNum===1?5:1;
+      msg('⚡ FIND THEM ALL! ('+pts+' PT'+(pts===1?'':'S')+')','rbb-go');
       phase='tapping';
       startFullStrobe();
       startRecallTimer();
     });
   },500));
 }
-$('reflex_repeatBtn').onclick=useRepeat;
 
 function startRound(){
   if(phase!=='idle')return;
-  clrT();phase='showing';found=[];firstTapDone=false;repeatUsedThisRound=false;
+  clrT();phase='showing';found=[];firstTapDone=false;attemptNum=0;
   resetCells();stopFullStrobe();stopRecallTimer();
   $('reflex_actBtn').disabled=true;$('reflex_restartBtn').style.display='none';
-  $('reflex_repeatBtn').classList.add('rbb-show');$('reflex_repeatBtn').disabled=false;
   updateHUD();
   $('reflex_clockFill').style.width='100%';$('reflex_hPf').textContent='--';
   var indices=shuffle(Array.from({length:50},(_,i)=>i)).slice(0,g.cellCount);
@@ -360,9 +359,10 @@ function handleTap(idx){
     cellSt(idx,'rbb-correct');found.push(idx);
     if(found.length>=targets.length){
       phase='idle';clrT();stopFullStrobe();stopRecallTimer();
-      $('reflex_repeatBtn').classList.remove('rbb-show');
       g.streak++;
-      g.sc+=repeatUsedThisRound?5:g.cellCount*10;
+      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?5:1);
+      g.sc+=pts;
+      var ptsLabel=attemptNum===0?'':(' ('+pts+' PT'+(pts===1?'':'S')+') · ');
 
       if(gameMode==='training'){
         g.roundsDone++;
@@ -371,34 +371,45 @@ function handleTap(idx){
           msg('🏆 LEVEL COMPLETE!','rbb-perfect');
           timers.push(setTimeout(showTrainingComplete,900));
         }else{
-          msg((repeatUsedThisRound?'✅ CORRECT (5 PTS) · ':'✅ CORRECT! ')+'('+g.roundsDone+'/'+TRAINING_ROUNDS+')','rbb-perfect');
+          msg('✅ CORRECT'+ptsLabel+' ('+g.roundsDone+'/'+TRAINING_ROUNDS+')','rbb-perfect');
           timers.push(setTimeout(function(){resetCells();autoNextRound()},700));
         }
       }else{
         if(g.cellCount>g.best)g.best=g.cellCount;
         g.cellCount++;
         updateHUD();
-        msg(repeatUsedThisRound?'✅ CORRECT (5 PTS) · MORE CELLS...':'✅ PERFECT! MORE CELLS...','rbb-perfect');
+        msg('✅ '+(attemptNum===0?'PERFECT! ':'CORRECT'+ptsLabel)+'MORE CELLS...','rbb-perfect');
         timers.push(setTimeout(function(){resetCells();autoNextRound()},700));
       }
     }
   }else if(targets.indexOf(idx)===-1){
-    endGame(idx);
+    if(attemptNum<2){
+      cellSt(idx,'rbb-wrong');
+      attemptNum++;
+      timers.push(setTimeout(function(){resetCells();repeatRound()},500));
+    }else{
+      endGame(idx);
+    }
   }
   // tapping an already-found target again is a harmless no-op
 }
 
 function handleTimeout(){
   if(phase!=='tapping')return;
-  endGame(null);
+  if(attemptNum<2){
+    attemptNum++;
+    resetCells();
+    repeatRound();
+  }else{
+    endGame(null);
+  }
 }
 
 function endGame(wrongIdx){
   phase='idle';clrT();stopFullStrobe();stopRecallTimer();
-  $('reflex_repeatBtn').classList.remove('rbb-show');
   if(wrongIdx!==null)cellSt(wrongIdx,'rbb-wrong');
   g.streak=0;updateHUD();
-  msg(wrongIdx!==null?'WRONG CELL!':'⏱ TIME UP!','rbb-miss');
+  msg(wrongIdx!==null?'WRONG CELL — GAME OVER!':'⏱ TIME UP — GAME OVER!','rbb-miss');
 
   timers.push(setTimeout(function(){
     targets.forEach(function(pi){if(found.indexOf(pi)===-1)cellSt(pi,'rbb-missed')});
@@ -410,11 +421,10 @@ function autoNextRound(){if(phase!=='idle')return;resetCells();$('reflex_clockFi
 
 function showFinalScore(){
   phase='idle';clrT();resetCells();updateHUD();$('reflex_clockFill').style.width='0%';$('reflex_hPf').textContent='--';
-  $('reflex_repeatBtn').classList.remove('rbb-show');
   if(gameMode==='training'){
-    msg(g.roundsDone+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' · SCORE '+g.sc+' · REPEATS '+g.totalRepeats,'rbb-miss');
+    msg(g.roundsDone+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' · SCORE '+g.sc,'rbb-miss');
   }else{
-    msg('GAME OVER — SCORE '+g.sc+' ('+bpm+' BPM · BEST '+g.best+' CELLS · REPEATS '+g.totalRepeats+')','rbb-miss');
+    msg('GAME OVER — SCORE '+g.sc+' ('+bpm+' BPM · BEST '+g.best+' CELLS)','rbb-miss');
   }
   $('reflex_actBtn').textContent="PLAY AGAIN";$('reflex_actBtn').onclick=restartGame;$('reflex_actBtn').disabled=false;
   $('reflex_restartBtn').style.display='none';
@@ -422,17 +432,16 @@ function showFinalScore(){
 
 function showTrainingComplete(){
   phase='idle';clrT();resetCells();updateHUD();$('reflex_clockFill').style.width='0%';$('reflex_hPf').textContent='--';
-  $('reflex_repeatBtn').classList.remove('rbb-show');
-  msg('🏆 '+TRAINING_ROUNDS+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' COMPLETE! · SCORE '+g.sc+' · REPEATS '+g.totalRepeats,'rbb-perfect');
+  msg('🏆 '+TRAINING_ROUNDS+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' COMPLETE! · SCORE '+g.sc,'rbb-perfect');
   $('reflex_actBtn').textContent="PLAY AGAIN";$('reflex_actBtn').onclick=restartGame;$('reflex_actBtn').disabled=false;
   $('reflex_restartBtn').style.display='none';
 }
 
 function restartGame(){
   clrT();phase='idle';stopFullStrobe();stopRecallTimer();
-  g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0,totalRepeats:0};
+  g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
+  attemptNum=0;
   resetCells();updateHUD();$('reflex_clockFill').style.width='0%';$('reflex_hPf').textContent='--';
-  $('reflex_repeatBtn').classList.remove('rbb-show');
   msg("TAP LET'S GO!",'rbb-watch');
   $('reflex_actBtn').textContent="LET'S GO";$('reflex_actBtn').onclick=startRound;$('reflex_actBtn').disabled=false;$('reflex_restartBtn').style.display='none';
 }
