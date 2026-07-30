@@ -7,13 +7,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 
-/* Locked to the viewport with position:fixed rather than height:100vh —
-   this is the actual fix. 100vh recalculates whenever a mobile/VR
-   browser's own UI chrome shows or hides, and a flex-centered layout
-   reacting to that recalculation is exactly what produces a page that
-   looks like it's drifting up and down on its own. Fixed positioning
-   removes that dependency entirely: there is nothing here for the
-   browser to recalculate against, so there's nothing left to loop. */
+/* Fixed to the viewport rather than height:100vh — 100vh recalculates
+   whenever a mobile/VR browser's UI chrome shows or hides, and reacting
+   to that recalculation is what causes a page to drift on its own.
+   Fixed positioning removes the dependency entirely. */
 html,body{
   height:100%;
   overflow:hidden;
@@ -32,50 +29,20 @@ body{
   align-items:center;
   justify-content:center;
   padding:24px;
-  background:linear-gradient(180deg,#0a0300,#050100);
-}
-
-/* Subtle, purely decorative background motion. Absolutely positioned and
-   layered behind everything else, so no matter how it animates it can
-   never affect the size or position of #panel, and therefore can never
-   reintroduce any scroll or shift. This is the "dynamic" half of the
-   page — motion that's structurally incapable of causing the bug. */
-.glow{
-  position:absolute;
-  border-radius:50%;
-  filter:blur(60px);
-  pointer-events:none;
-}
-.glow1{
-  width:420px;height:420px;left:-100px;top:-120px;
-  background:rgba(255,107,53,.16);
-  animation:drift1 14s ease-in-out infinite;
-}
-.glow2{
-  width:360px;height:360px;right:-90px;bottom:-100px;
-  background:rgba(255,107,53,.10);
-  animation:drift2 18s ease-in-out infinite;
-}
-@keyframes drift1{
-  0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(30px,20px) scale(1.08)}
-}
-@keyframes drift2{
-  0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(-24px,-18px) scale(1.05)}
+  background:radial-gradient(circle at 16% 5%,rgba(255,107,53,.15),transparent 30%),linear-gradient(180deg,#0a0300,#050100);
 }
 
 #panel{
   position:relative;
   z-index:2;
   width:100%;
-  max-width:440px;
+  max-width:820px;
   max-height:100%;
   overflow-y:auto;
   text-align:center;
 }
 h1{
-  font-size:2rem;
+  font-size:clamp(1.6rem,4vw,2.3rem);
   letter-spacing:.02em;
   margin-bottom:2px;
 }
@@ -83,14 +50,10 @@ h1 span{color:#f37418}
 .subtitle{
   font-size:.85rem;
   color:#c9b8a8;
-  margin-bottom:32px;
+  margin-bottom:24px;
   letter-spacing:.03em;
 }
-.gameList{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
+
 .gameLink{
   display:block;
   padding:16px 18px;
@@ -118,26 +81,54 @@ h1 span{color:#f37418}
   margin-top:3px;
   letter-spacing:.01em;
 }
+
+/* Swish Memory sits on its own, centered, ahead of the grid below. */
+.featuredRow{
+  display:flex;
+  justify-content:center;
+  margin-bottom:14px;
+}
+.gameLink.featured{
+  width:100%;
+  max-width:420px;
+  text-align:center;
+  background:linear-gradient(135deg,rgba(243,116,24,.16),rgba(255,255,255,.04));
+  border-color:rgba(255,155,80,.55);
+}
+.gameLink.featured .tag{text-align:center}
+
+.gameGrid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+
 footer{
-  margin-top:32px;
+  margin-top:24px;
   font-size:.72rem;
   color:#6b5d52;
   letter-spacing:.02em;
+}
+
+@media (max-width:520px){
+  .gameGrid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div id="stage">
-  <div class="glow glow1"></div>
-  <div class="glow glow2"></div>
   <div id="panel">
     <h1>Basketball <span>Hooporia</span></h1>
     <div class="subtitle">Choose a training mode</div>
-    <div class="gameList">
-      <a class="gameLink" href="shoot-training-loop.html">
+
+    <div class="featuredRow">
+      <a class="gameLink featured" href="shoot-training-loop.html">
         Swish Memory
         <span class="tag">Watch the swish, on repeat — until your shot just finishes what you see</span>
       </a>
+    </div>
+
+    <div class="gameGrid">
       <a class="gameLink" href="basketball-recall.html">
         Basketball Recall
         <span class="tag">Watch a sequence, then tap it back in order</span>
@@ -155,6 +146,7 @@ footer{
         <span class="tag">Spot which cell changed between two patterns</span>
       </a>
     </div>
+
     <footer>Gostar Digital LLC</footer>
   </div>
 </div>
