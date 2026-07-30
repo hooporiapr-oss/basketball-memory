@@ -2,24 +2,76 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Hooporia</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
+
+/* Locked to the viewport with position:fixed rather than height:100vh —
+   this is the actual fix. 100vh recalculates whenever a mobile/VR
+   browser's own UI chrome shows or hides, and a flex-centered layout
+   reacting to that recalculation is exactly what produces a page that
+   looks like it's drifting up and down on its own. Fixed positioning
+   removes that dependency entirely: there is nothing here for the
+   browser to recalculate against, so there's nothing left to loop. */
+html,body{
+  height:100%;
+  overflow:hidden;
+  background:#050100;
+}
 body{
   font-family:Arial,Helvetica,sans-serif;
-  background:radial-gradient(circle at 16% 5%,rgba(255,107,53,.15),transparent 30%),linear-gradient(180deg,#0a0300,#050100);
   color:#fff;
-  min-height:100vh;
+}
+
+#stage{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:24px;
+  background:linear-gradient(180deg,#0a0300,#050100);
 }
+
+/* Subtle, purely decorative background motion. Absolutely positioned and
+   layered behind everything else, so no matter how it animates it can
+   never affect the size or position of #panel, and therefore can never
+   reintroduce any scroll or shift. This is the "dynamic" half of the
+   page — motion that's structurally incapable of causing the bug. */
+.glow{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(60px);
+  pointer-events:none;
+}
+.glow1{
+  width:420px;height:420px;left:-100px;top:-120px;
+  background:rgba(255,107,53,.16);
+  animation:drift1 14s ease-in-out infinite;
+}
+.glow2{
+  width:360px;height:360px;right:-90px;bottom:-100px;
+  background:rgba(255,107,53,.10);
+  animation:drift2 18s ease-in-out infinite;
+}
+@keyframes drift1{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(30px,20px) scale(1.08)}
+}
+@keyframes drift2{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(-24px,-18px) scale(1.05)}
+}
+
 #panel{
+  position:relative;
+  z-index:2;
   width:100%;
   max-width:440px;
+  max-height:100%;
+  overflow-y:auto;
   text-align:center;
 }
 h1{
@@ -75,36 +127,36 @@ footer{
 </style>
 </head>
 <body>
-
-<div id="panel">
-  <h1>Basketball <span>Hooporia</span></h1>
-  <div class="subtitle">Choose a training mode</div>
-
-  <div class="gameList">
-    <a class="gameLink" href="shoot-training-loop.html">
-      Swish Memory
-      <span class="tag">Watch the swish, on repeat — until your shot just finishes what you see</span>
-    </a>
-    <a class="gameLink" href="basketball-recall.html">
-      Basketball Recall
-      <span class="tag">Watch a sequence, then tap it back in order</span>
-    </a>
-    <a class="gameLink" href="basketball-reflex.html">
-      Basketball Reflex
-      <span class="tag">Find and tap every spot that flashed — order doesn't matter</span>
-    </a>
-    <a class="gameLink" href="basketball-replay.html">
-      Basketball Replay
-      <span class="tag">Watch a sequence play out, then replay it back</span>
-    </a>
-    <a class="gameLink" href="basketball-recognition.html">
-      Basketball Recognition
-      <span class="tag">Spot which cell changed between two patterns</span>
-    </a>
+<div id="stage">
+  <div class="glow glow1"></div>
+  <div class="glow glow2"></div>
+  <div id="panel">
+    <h1>Basketball <span>Hooporia</span></h1>
+    <div class="subtitle">Choose a training mode</div>
+    <div class="gameList">
+      <a class="gameLink" href="shoot-training-loop.html">
+        Swish Memory
+        <span class="tag">Watch the swish, on repeat — until your shot just finishes what you see</span>
+      </a>
+      <a class="gameLink" href="basketball-recall.html">
+        Basketball Recall
+        <span class="tag">Watch a sequence, then tap it back in order</span>
+      </a>
+      <a class="gameLink" href="basketball-reflex.html">
+        Basketball Reflex
+        <span class="tag">Find and tap every spot that flashed — order doesn't matter</span>
+      </a>
+      <a class="gameLink" href="basketball-replay.html">
+        Basketball Replay
+        <span class="tag">Watch a sequence play out, then replay it back</span>
+      </a>
+      <a class="gameLink" href="basketball-recognition.html">
+        Basketball Recognition
+        <span class="tag">Spot which cell changed between two patterns</span>
+      </a>
+    </div>
+    <footer>Gostar Digital LLC</footer>
   </div>
-
-  <footer>Gostar Digital LLC</footer>
 </div>
-
 </body>
 </html>
