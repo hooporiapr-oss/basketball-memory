@@ -62,6 +62,14 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
 .rby-clockbar{height:6px;background:rgba(255,255,255,.08);flex-shrink:0;overflow:hidden}
 .rby-clockbar-fill{height:100%;background:linear-gradient(90deg,#ff9500,#00B894);transition:width .1s linear}
 .rby-msg-bar{text-align:center;font-size:1.1rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;min-height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 10px}
+.rby-msg-bar.rby-repeat{
+  color:#ffd35a;background:rgba(255,211,90,.14);border-radius:10px;
+  animation:rbyRepeatFlash .5s ease-out;
+}
+@keyframes rbyRepeatFlash{
+  0%{transform:scale(1.06);background:rgba(255,211,90,.4)}
+  100%{transform:scale(1);background:rgba(255,211,90,.14)}
+}
 .rby-msg-bar.rby-watch{color:#ffd35a}.rby-msg-bar.rby-go{color:#ff9500}.rby-msg-bar.rby-perfect{color:#ff9500}.rby-msg-bar.rby-miss{color:#FF1493}
 .rby-stars{display:flex;gap:8px;justify-content:center;align-items:center;flex-shrink:0;padding:2px 0;flex-wrap:wrap}
 .rby-star{font-size:.9rem;opacity:.2;transition:all .3s}
@@ -315,7 +323,8 @@ function repeatRound(){
   resetCells();
   updateHUD();
   $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
-  msg('↻ TRY AGAIN — WATCH!','rby-watch');
+  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rby-repeat');
   timers.push(setTimeout(function(){
     revealSequence(function(){
       var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
@@ -324,7 +333,7 @@ function repeatRound(){
       startFullStrobe();
       startRecallTimer();
     });
-  },500));
+  },700));
 }
 
 function startRound(){
