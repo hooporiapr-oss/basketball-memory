@@ -313,7 +313,7 @@ function repeatRound(){
   msg('↻ TRY AGAIN — WATCH!','rbb-watch');
   timers.push(setTimeout(function(){
     revealTargets(function(){
-      var pts=attemptNum===1?5:1;
+      var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
       msg('⚡ FIND THEM ALL! ('+pts+' PT'+(pts===1?'':'S')+')','rbb-go');
       phase='tapping';
       startFullStrobe();
@@ -360,7 +360,7 @@ function handleTap(idx){
     if(found.length>=targets.length){
       phase='idle';clrT();stopFullStrobe();stopRecallTimer();
       g.streak++;
-      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?5:1);
+      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?g.cellCount*5:g.cellCount*1);
       g.sc+=pts;
       var ptsLabel=attemptNum===0?'':(' ('+pts+' PT'+(pts===1?'':'S')+') · ');
 
