@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Hooporia · Access</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{
+    height:100%;overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;color:#fff;
+    background:radial-gradient(circle at 16% 5%,rgba(255,107,53,.15),transparent 30%),linear-gradient(180deg,#0a0300,#050100);
+    user-select:none;-webkit-user-select:none;
+  }
+
+  #stage{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+
+  #panel{width:100%;max-width:400px;text-align:center}
+  .kicker{font-size:.7rem;font-weight:900;letter-spacing:.4em;text-transform:uppercase;color:#f37418;margin-bottom:14px}
+  .brand{font-size:2.6rem;font-weight:900;letter-spacing:.02em;line-height:1;margin-bottom:6px}
+  .brand span{color:#f37418}
+  .sub{font-size:.85rem;color:#c9b8a8;letter-spacing:.02em;margin-bottom:44px}
+
+  .code-panel{width:100%}
+  .code-label{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8892a0;margin-bottom:10px}
+  .code-input{
+    width:100%;padding:16px;border-radius:12px;border:2px solid rgba(255,126,32,.35);
+    background:rgba(255,255,255,.05);color:#fff;font-size:1.4rem;font-weight:900;
+    letter-spacing:.25em;text-transform:uppercase;text-align:center;font-family:'Courier New',monospace;
+  }
+  .code-input:focus{outline:none;border-color:#f37418;box-shadow:0 0 24px rgba(243,116,24,.3)}
+  .code-input.shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+  .enter-btn{
+    width:100%;margin-top:16px;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,#f37418,#ff9b50);color:#1a0900;
+    font-size:1rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+  }
+  .enter-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(243,116,24,.35)}
+  .enter-btn:active{transform:scale(.98)}
+
+  .err{margin-top:14px;color:#ff8888;font-size:.85rem;font-weight:700;min-height:18px}
+
+  .brandmark{margin-top:50px;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6b5d52}
+  .brandmark b{color:#8892a0;font-style:italic}
+
+  @media(max-width:480px){ .brand{font-size:2.1rem} }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="panel">
+    <div class="kicker">🏀 Basketball Training</div>
+    <div class="brand">HOOP<span>ORIA</span></div>
+    <div class="sub">Access your training program</div>
+
+    <div class="code-panel">
+      <div class="code-label">Access Code</div>
+      <input class="code-input" id="gate-code" maxlength="40" placeholder="• • • •" autocomplete="off" onkeydown="if(event.key==='Enter')tryEnter()">
+      <button class="enter-btn" onclick="tryEnter()">Enter Training →</button>
+      <div class="err" id="gate-err"></div>
+    </div>
+
+    <div class="brandmark">Powered by <b>Gostar Digital</b></div>
+  </div>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id)};
+
+// ══════════════════════════════════════════════════════
+//  LICENSE SYSTEM — codes are checked against the SAME
+//  Supabase table Ritnome uses. To issue / expire / revoke
+//  Hooporia licenses, use admin.html → the Hooporia tab.
+//
+//  This gate is scoped to product='hooporia' — a code
+//  issued for Ritnome will NOT unlock this gate, and
+//  vice versa, even though both live in the same table.
+// ══════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+var PRODUCT = 'hooporia';
+// ══════════════════════════════════════════════════════
+
+function tryEnter(){
+  var input = $('gate-code').value.trim();
+  if (!input){ return; }
+  $('gate-err').style.color = '';
+  $('gate-err').textContent = 'Checking…';
+
+  // Query Supabase: does a row exist with this code (case-insensitive), active = true, product = hooporia?
+  var url = SUPABASE_URL + '/rest/v1/licenses'
+    + '?select=code,expires_at,active,product'
+    + '&code=ilike.' + encodeURIComponent(input)
+    + '&active=eq.true'
+    + '&product=eq.' + PRODUCT;
+
+  fetch(url, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+    }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    var lic = (rows && rows.length) ? rows[0] : null;
+
+    // not found, inactive, or belongs to a different product
+    if (!lic){ return reject('Invalid code — check with your administrator'); }
+
+    // expired?
+    if (lic.expires_at){
+      var exp = new Date(lic.expires_at + 'T23:59:59');
+      if (new Date() > exp){ return reject('This license has expired'); }
+    }
+
+    // valid → enter
+    sessionStorage.setItem('hoop-gate-pass','1');
+    sessionStorage.setItem('hoop-license', input.toUpperCase());
+    window.location.href = '/hooporia-lab.html';
+  })
+  .catch(function(){
+    reject('Connection problem — please try again');
+  });
+}
+
+function reject(msg){
+  $('gate-err').style.color = '#ff8888';
+  $('gate-err').textContent = msg;
+  var box = $('gate-code');
+  box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+  box.value=''; box.focus();
+}
+
+$('gate-code').focus();
+</script>
+</body>
+</html>
