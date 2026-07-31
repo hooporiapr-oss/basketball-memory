@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+if (sessionStorage.getItem('hoop-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SHOOT | Visual Training Loop</title>
@@ -59,7 +64,7 @@ video{width:100%;height:100%;object-fit:cover;display:block}
 </head>
 <body>
 
-<a id="backBtn" href="hooporia-lab.html">← BACK</a>
+<a id="backBtn" href="index.html">← BACK</a>
 <button id="replayBtn" type="button">↺ REPLAY</button>
 
 <div id="stage">
@@ -69,13 +74,13 @@ video{width:100%;height:100%;object-fit:cover;display:block}
   </div>
 
   <video id="trainingVideo" playsinline muted>
-    <source src="shoot-swish-30.mp4" type="video/mp4">
+    <source src="shoot-swish-05.mp4" type="video/mp4">
   </video>
 
   <div id="missingNote" style="display:none">
     <div style="font-size:2rem">🏀</div>
     <div><strong>No video loaded yet</strong></div>
-    <div>Drop your generated clip in this same folder, named <code>shoot-swish-30.mp4</code>, and reload this page.</div>
+    <div>Drop your generated clip in this same folder, named <code>shoot-swish-05.mp4</code>, and reload this page.</div>
   </div>
 
   <div id="startOverlay">
