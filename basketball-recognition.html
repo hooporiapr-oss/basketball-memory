@@ -357,7 +357,7 @@ function startFind(){
   phase='finding';canTap=true;resetCells();
   /* Genuinely blank — no outlined targets to pick from. The player recalls
      from memory which cell in the pattern was the changed one. */
-  var pts=attemptNum===1?5:1;
+  var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
   msg(attemptNum===0?'⚡ WHICH ONE CHANGED?':'⚡ WHICH ONE CHANGED? ('+pts+' PT'+(pts===1?'':'S')+')','rcg-go');
   startFullStrobe();
   var dur=getFindMs();
@@ -380,12 +380,13 @@ function handleTap(idx){
     timers.push(setTimeout(function(){cellSt(originalCell,'rcg-reveal-original',changePos+1)},300));
     timers.push(setTimeout(roundSuccess,700));
   }else{
-    cellSt(idx,'rcg-wrong');revealAnswer();
+    cellSt(idx,'rcg-wrong');
     if(attemptNum<2){
       msg('NOT QUITE — WATCH AGAIN','rcg-miss');
       attemptNum++;
       timers.push(setTimeout(function(){resetCells();repeatRound()},900));
     }else{
+      revealAnswer();
       endGame(idx,true);
     }
   }
@@ -394,12 +395,12 @@ function handleTap(idx){
 function handleTimeout(){
   if(phase!=='finding')return;
   canTap=false;stopFullStrobe();
-  revealAnswer();
   if(attemptNum<2){
     msg("TIME'S UP — WATCH AGAIN",'rcg-miss');
     attemptNum++;
     timers.push(setTimeout(function(){resetCells();repeatRound()},900));
   }else{
+    revealAnswer();
     msg("TIME'S UP!",'rcg-miss');
     endGame(null,true);
   }
@@ -410,7 +411,7 @@ function revealAnswer(){cellSt(changedCell,'rcg-reveal-answer',changePos+1);cell
 function roundSuccess(){
   phase='idle';
   g.streak++;
-  var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?5:1);
+  var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?g.cellCount*5:g.cellCount*1);
   g.sc+=pts;
   var ptsLabel=attemptNum===0?'':(' ('+pts+' PT'+(pts===1?'':'S')+') · ');
 
