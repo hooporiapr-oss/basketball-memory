@@ -242,6 +242,26 @@ function startTimer(dur){
 }
 function stopTimer(){if(timerRAF)cancelAnimationFrame(timerRAF);timerRAF=null;$('recog_timerFill').style.width='100%';$('recog_timerFill').className='rcg-timerbar-fill'}
 
+// Same clock, different consequence: while offering a repeat window, if
+// nothing is clicked before this runs out, it counts as forfeiting the
+// chance — same as if the answer itself had been wrong.
+var repeatWindowRAF=null;
+function startRepeatWindowTimer(dur){
+  var start=performance.now();
+  $('recog_timerFill').style.width='100%';$('recog_timerFill').className='rcg-timerbar-fill';
+  function tick(){
+    var remain=dur-(performance.now()-start);
+    var pct=Math.max(0,remain/dur);
+    $('recog_timerFill').style.width=(pct*100)+'%';
+    $('recog_hPf').textContent=Math.max(0,remain/1000).toFixed(1)+'s';
+    if(pct<0.3)$('recog_timerFill').className='rcg-timerbar-fill rcg-danger';else if(pct<0.5)$('recog_timerFill').className='rcg-timerbar-fill rcg-warn';
+    if(remain<=0){repeatWindowRAF=null;handleRepeatWindowMiss();return}
+    if(phase==='repeat-window')repeatWindowRAF=requestAnimationFrame(tick);
+  }
+  repeatWindowRAF=requestAnimationFrame(tick);
+}
+function stopRepeatWindowTimer(){if(repeatWindowRAF)cancelAnimationFrame(repeatWindowRAF);repeatWindowRAF=null;$('recog_timerFill').style.width='100%';$('recog_timerFill').className='rcg-timerbar-fill'}
+
 $('recog_startBtn').onclick=function(){
   $('recog_screen-intro').style.display='none';$('recog_screen-game').style.display='flex';
   g.cellCount=getInitialCellCount();g.roundsDone=0;
@@ -292,12 +312,12 @@ function updateHUD(){
     $('recog_hLv').textContent=g.best;
   }
   $('recog_hSt').textContent=g.streak;
-  $('recog_hAtt').textContent=Math.max(0,2-attemptNum);
+  $('recog_hAtt').textContent=Math.max(0,2-repeatOfferNum);
   $('recog_ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('recog_msg');el.textContent=txt;el.className='rcg-msg-bar '+(cls||'rcg-watch')}
 
-var phase='idle',original=[],echo=[],changedCell=-1,originalCell=-1,changePos=-1,timers=[],firstTapDone=false,attemptNum=0;
+var phase='idle',original=[],echo=[],changedCell=-1,originalCell=-1,changePos=-1,timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 function shuffle(arr){for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t}return arr}
 
@@ -326,32 +346,63 @@ function revealWatchEcho(){
   timers.push(setTimeout(watchNext,500));
 }
 
-// Manual, player-triggered repeat — up to two per round. Each use replays
-// the same original/echo patterns and locks in a lower score tier: 0
-// used = full value (cellCount*10), 1 used = cellCount*5, 2 used =
-// cellCount*1. A wrong answer at any point still ends the game
-// immediately — the repeat is a proactive "watch it again" choice
-// available while deciding, not a safety net after a mistake.
-function useRepeat(){
-  if(phase!=='finding'||attemptNum>=2)return;
-  attemptNum++;
-  updateHUD();
-  if(attemptNum>=2)$('recog_repeatBtn').disabled=true;
+// A wrong answer no longer ends the game outright — it opens a timed
+// window where the player must actively click REPEAT to get another
+// chance. Missing that window (timeout) counts the same as failing it.
+// Up to two such windows per round: 1st repeat used = cellCount*5 if
+// then correct, 2nd repeat used = cellCount*1. A failure (wrong answer
+// or window timeout) while already on the 2nd window ends the game —
+// the answer only gets revealed at that final point, never before, so
+// a repeat chance never spoils itself.
+function handleFailure(wrongIdx){
+  if(wrongIdx!==null)cellSt(wrongIdx,'rcg-wrong');
+  if(repeatOfferNum<2){
+    repeatOfferNum++;
+    timers.push(setTimeout(offerRepeatWindow,900));
+  }else{
+    revealAnswer();
+    endGame(wrongIdx,true);
+  }
+}
+
+function offerRepeatWindow(){
   clrT();canTap=false;stopTimer();stopFullStrobe();
+  phase='repeat-window';
+  resetCells();
+  $('recog_repeatBtn').classList.add('rcg-show');$('recog_repeatBtn').disabled=false;
+  updateHUD();
+  $('recog_hPf').textContent='--';
+  var upcomingPts=repeatOfferNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT AVAILABLE — CLICK NOW! ('+upcomingPts+' PTS)','rcg-repeat');
+  startRepeatWindowTimer(getFindMs());
+}
+
+function handleRepeatWindowMiss(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  handleFailure(null);
+}
+
+function useRepeat(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  attemptNum++;
+  $('recog_repeatBtn').disabled=true;
+  clrT();canTap=false;stopFullStrobe();
   resetCells();
   $('recog_hPf').textContent='--';
-  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
-  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rcg-repeat');
+  var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+pts,'rcg-repeat');
   timers.push(setTimeout(revealWatchEcho,700));
 }
 $('recog_repeatBtn').onclick=useRepeat;
 
 function startRound(){
   if(phase!=='idle')return;
-  clrT();canTap=false;stopTimer();stopFullStrobe();firstTapDone=false;attemptNum=0;
+  clrT();canTap=false;stopTimer();stopFullStrobe();firstTapDone=false;attemptNum=0;repeatOfferNum=0;
   genPatterns();
   resetCells();$('recog_actBtn').disabled=true;$('recog_restartBtn').style.display='none';
-  $('recog_repeatBtn').classList.add('rcg-show');$('recog_repeatBtn').disabled=false;
+  $('recog_repeatBtn').classList.remove('rcg-show');
   updateHUD();
   $('recog_hPf').textContent='--';
   revealWatchEcho();
@@ -397,18 +448,14 @@ function handleTap(idx){
     timers.push(setTimeout(function(){cellSt(originalCell,'rcg-reveal-original',changePos+1)},300));
     timers.push(setTimeout(roundSuccess,700));
   }else{
-    cellSt(idx,'rcg-wrong');
-    revealAnswer();
-    endGame(idx,true);
+    handleFailure(idx);
   }
 }
 
 function handleTimeout(){
   if(phase!=='finding')return;
   canTap=false;stopFullStrobe();
-  revealAnswer();
-  msg("TIME'S UP!",'rcg-miss');
-  endGame(null,true);
+  handleFailure(null);
 }
 
 function revealAnswer(){cellSt(changedCell,'rcg-reveal-answer',changePos+1);cellSt(originalCell,'rcg-reveal-original',changePos+1)}
@@ -442,7 +489,7 @@ function roundSuccess(){
 function autoNextRound(){if(phase!=='idle')return;resetCells();stopTimer();$('recog_hPf').textContent='--';$('recog_restartBtn').style.display='none';$('recog_actBtn').disabled=true;startRound()}
 
 function endGame(wrongIdx,alreadyRevealed){
-  phase='idle';clrT();stopFullStrobe();stopTimer();
+  phase='idle';clrT();stopFullStrobe();stopTimer();stopRepeatWindowTimer();
   $('recog_repeatBtn').classList.remove('rcg-show');
   if(wrongIdx!==null&&!alreadyRevealed){cellSt(wrongIdx,'rcg-wrong');revealAnswer();}
   g.streak=0;updateHUD();
@@ -473,9 +520,9 @@ function showTrainingComplete(){
 }
 
 function restartGame(){
-  clrT();phase='idle';canTap=false;stopTimer();stopFullStrobe();
+  clrT();phase='idle';canTap=false;stopTimer();stopFullStrobe();stopRepeatWindowTimer();
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
-  attemptNum=0;
+  attemptNum=0;repeatOfferNum=0;
   resetCells();updateHUD();$('recog_hPf').textContent='--';
   $('recog_repeatBtn').classList.remove('rcg-show');
   msg("TAP LET'S GO!",'rcg-watch');
