@@ -327,7 +327,7 @@ function repeatRound(){
   msg('↻ TRY AGAIN — MEMORIZE!','watch');
   timers.push(setTimeout(function(){
     revealPattern(function(){
-      var pts=attemptNum===1?5:1;
+      var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
       msg('⚡ RECALL NOW! ('+pts+' PT'+(pts===1?'':'S')+')','go');
       phase='tapping';
       startFullStrobe();
@@ -374,7 +374,7 @@ function handleTap(idx){
     if(playerIdx>=pattern.length){
       phase='idle';clrT();stopFullStrobe();stopRecallTimer();
       g.streak++;
-      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?5:1);
+      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?g.cellCount*5:g.cellCount*1);
       g.sc+=pts;
       var ptsLabel=attemptNum===0?'':(' ('+pts+' PT'+(pts===1?'':'S')+') · ');
 
