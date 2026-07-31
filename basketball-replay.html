@@ -224,6 +224,25 @@ function startRecallTimer(){
 }
 function stopRecallTimer(){if(recallRAF){cancelAnimationFrame(recallRAF);recallRAF=null}}
 
+// Same clock, different consequence: while offering a repeat window, if
+// nothing is clicked before this runs out, it counts as forfeiting the
+// chance — same as if the answer itself had been wrong.
+var repeatWindowDeadline=0,repeatWindowRAF=null;
+function startRepeatWindowTimer(){
+  var dur=getBeatMs();
+  repeatWindowDeadline=performance.now()+dur;
+  function tick(){
+    var remain=repeatWindowDeadline-performance.now();
+    var pct=Math.max(0,remain/dur);
+    $('replay_clockFill').style.width=(pct*100)+'%';
+    $('replay_hTr').textContent=Math.max(0,remain/1000).toFixed(1)+'s';
+    if(remain<=0){repeatWindowRAF=null;handleRepeatWindowMiss();return}
+    if(phase==='repeat-window')repeatWindowRAF=requestAnimationFrame(tick);
+  }
+  repeatWindowRAF=requestAnimationFrame(tick);
+}
+function stopRepeatWindowTimer(){if(repeatWindowRAF){cancelAnimationFrame(repeatWindowRAF);repeatWindowRAF=null}}
+
 $('replay_startBtn').onclick=function(){
   $('replay_screen-intro').style.display='none';$('replay_screen-game').style.display='flex';
   g.cellCount=getInitialCellCount();g.roundsDone=0;
@@ -274,7 +293,7 @@ function updateHUD(){
     $('replay_hLv').textContent=g.best;
   }
   $('replay_hSt').textContent=g.streak;
-  $('replay_hAtt').textContent=Math.max(0,2-attemptNum);
+  $('replay_hAtt').textContent=Math.max(0,2-repeatOfferNum);
   $('replay_ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('replay_msg');el.textContent=txt;el.className='rby-msg-bar '+(cls||'rby-watch')}
@@ -293,7 +312,7 @@ function beatPulse(){
   setTimeout(function(){b.classList.remove('pulse')},Math.min(240,getShowMs()*0.4));
 }
 
-var phase='idle',sequence=[],playerIdx=0,timers=[],firstTapDone=false,attemptNum=0;
+var phase='idle',sequence=[],playerIdx=0,timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 
 function revealSequence(cb){
@@ -313,31 +332,53 @@ function revealSequence(cb){
   next();
 }
 
-// Automatically re-shows the SAME sequence after a wrong tap or timeout —
-// up to two extra chances per round before the game actually ends.
-// attemptNum: 0 = first try (full points), 1 = after 1st auto-repeat
-// (5 points), 2 = after 2nd auto-repeat (1 point). Failing attempt 2 ends
-// the game for real.
-// Manual, player-triggered repeat — up to two per round. Each use shows
-// the same sequence again and locks in a lower score tier: 0 used = full
-// value (cellCount*10), 1 used = cellCount*5, 2 used = cellCount*1.
-// A wrong tap at any point still ends the game immediately — the repeat
-// is a proactive "watch it again" choice, not a safety net after a
-// mistake.
-function useRepeat(){
-  if(phase!=='tapping'||attemptNum>=2)return;
-  attemptNum++;
-  updateHUD();
-  if(attemptNum>=2)$('replay_repeatBtn').disabled=true;
+// A wrong tap no longer ends the game outright — it opens a timed
+// window where the player must actively click REPEAT to get another
+// chance. Missing that window (timeout) counts the same as failing it.
+// Up to two such windows per round: 1st repeat used = cellCount*5 if
+// then correct, 2nd repeat used = cellCount*1. A failure (wrong tap or
+// window timeout) while already on the 2nd window ends the game.
+function handleFailure(wrongIdx){
+  if(wrongIdx!==null)cellSt(wrongIdx,'rby-wrong');
+  if(repeatOfferNum<2){
+    repeatOfferNum++;
+    timers.push(setTimeout(offerRepeatWindow,500));
+  }else{
+    endGame(wrongIdx);
+  }
+}
+
+function offerRepeatWindow(){
   clrT();stopFullStrobe();stopRecallTimer();
+  phase='repeat-window';
+  resetCells();
+  $('replay_repeatBtn').classList.add('rby-show');$('replay_repeatBtn').disabled=false;
+  updateHUD();
+  $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
+  var upcomingPts=repeatOfferNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT AVAILABLE — CLICK NOW! ('+upcomingPts+' PTS)','rby-repeat');
+  startRepeatWindowTimer();
+}
+
+function handleRepeatWindowMiss(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  handleFailure(null);
+}
+
+function useRepeat(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  attemptNum++;
+  $('replay_repeatBtn').disabled=true;
+  clrT();stopFullStrobe();
   phase='showing';playerIdx=0;firstTapDone=false;
   resetCells();
   $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
-  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
-  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rby-repeat');
+  var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+pts,'rby-repeat');
   timers.push(setTimeout(function(){
     revealSequence(function(){
-      var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
       msg('⚡ REPLAY IT! ('+pts+' PT'+(pts===1?'':'S')+')','rby-go');
       phase='tapping';
       startFullStrobe();
@@ -350,10 +391,10 @@ $('replay_repeatBtn').onclick=useRepeat;
 
 function startRound(){
   if(phase!=='idle')return;
-  clrT();phase='showing';playerIdx=0;firstTapDone=false;attemptNum=0;
+  clrT();phase='showing';playerIdx=0;firstTapDone=false;attemptNum=0;repeatOfferNum=0;
   resetCells();stopFullStrobe();stopRecallTimer();
   $('replay_actBtn').disabled=true;$('replay_restartBtn').style.display='none';
-  $('replay_repeatBtn').classList.add('rby-show');$('replay_repeatBtn').disabled=false;
+  $('replay_repeatBtn').classList.remove('rby-show');
   updateHUD();
   $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
   sequence=genSeq();
@@ -412,17 +453,17 @@ function handleTap(idx){
       }
     }
   }else{
-    endGame(idx);
+    handleFailure(idx);
   }
 }
 
 function handleTimeout(){
   if(phase!=='tapping')return;
-  endGame(null);
+  handleFailure(null);
 }
 
 function endGame(wrongIdx){
-  phase='idle';clrT();stopFullStrobe();stopRecallTimer();
+  phase='idle';clrT();stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
   $('replay_repeatBtn').classList.remove('rby-show');
   if(wrongIdx!==null)cellSt(wrongIdx,'rby-wrong');
   g.streak=0;updateHUD();
@@ -457,9 +498,9 @@ function showTrainingComplete(){
 }
 
 function restartGame(){
-  clrT();phase='idle';stopFullStrobe();stopRecallTimer();
+  clrT();phase='idle';stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
-  attemptNum=0;
+  attemptNum=0;repeatOfferNum=0;
   resetCells();updateHUD();$('replay_clockFill').style.width='0%';$('replay_hTr').textContent='--';
   $('replay_repeatBtn').classList.remove('rby-show');
   msg("TAP LET'S GO!",'rby-watch');
