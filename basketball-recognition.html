@@ -142,7 +142,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
     <div class="rcg-top-box"><div class="rcg-top-label" id="recog_hRdLbl">Pattern</div><div class="rcg-top-val" id="recog_hRd">3</div></div>
     <div class="rcg-top-box"><div class="rcg-top-label" id="recog_hLvLbl">Best</div><div class="rcg-top-val" id="recog_hLv">0</div></div>
     <div class="rcg-top-box"><div class="rcg-top-label">Streak</div><div class="rcg-top-val" id="recog_hSt">0</div></div>
-    <div class="rcg-top-box"><div class="rcg-top-label">Attempt</div><div class="rcg-top-val" id="recog_hAtt">1/3</div></div>
+    <div class="rcg-top-box"><div class="rcg-top-label">Repeats Left</div><div class="rcg-top-val" id="recog_hAtt">2</div></div>
     <div class="rcg-top-box"><div class="rcg-top-label">Timer</div><div class="rcg-top-val" id="recog_hPf">--</div></div>
   </div>
   <div class="rcg-timerbar"><div class="rcg-timerbar-fill" id="recog_timerFill" style="width:100%"></div></div>
@@ -152,6 +152,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
   <div class="rcg-bottombar">
     <button class="rcg-bot-btn" id="recog_menuBtn">← Home<span>Settings</span></button>
     <button class="rcg-bot-btn rcg-start-btn" id="recog_actBtn">LET'S GO</button>
+    <button class="rcg-bot-btn rcg-repeat-btn" id="recog_repeatBtn">↻ REPEAT<span>2 per round</span></button>
     <button class="rcg-bot-btn" id="recog_restartBtn" style="display:none;visibility:hidden;pointer-events:none;width:0;height:0;padding:0;margin:0;border:0;overflow:hidden;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);color:#8892a0;font-size:.8rem" onclick="restartGame()">↺ Restart<span style="color:#555">Level 1</span></button>
   </div>
 </div>
@@ -291,7 +292,7 @@ function updateHUD(){
     $('recog_hLv').textContent=g.best;
   }
   $('recog_hSt').textContent=g.streak;
-  $('recog_hAtt').textContent=(attemptNum+1)+'/3';
+  $('recog_hAtt').textContent=Math.max(0,2-attemptNum);
   $('recog_ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('recog_msg');el.textContent=txt;el.className='rcg-msg-bar '+(cls||'rcg-watch')}
@@ -325,24 +326,32 @@ function revealWatchEcho(){
   timers.push(setTimeout(watchNext,500));
 }
 
-// Automatically re-plays the SAME original/echo patterns after a wrong
-// answer or timeout — up to two extra chances per round before the game
-// actually ends. attemptNum: 0 = first try (full points), 1 = after 1st
-// auto-repeat (5 points), 2 = after 2nd auto-repeat (1 point). Failing
-// attempt 2 ends the game for real.
-function repeatRound(){
+// Manual, player-triggered repeat — up to two per round. Each use replays
+// the same original/echo patterns and locks in a lower score tier: 0
+// used = full value (cellCount*10), 1 used = cellCount*5, 2 used =
+// cellCount*1. A wrong answer at any point still ends the game
+// immediately — the repeat is a proactive "watch it again" choice
+// available while deciding, not a safety net after a mistake.
+function useRepeat(){
+  if(phase!=='finding'||attemptNum>=2)return;
+  attemptNum++;
+  updateHUD();
+  if(attemptNum>=2)$('recog_repeatBtn').disabled=true;
   clrT();canTap=false;stopTimer();stopFullStrobe();
   resetCells();
-  updateHUD();
   $('recog_hPf').textContent='--';
-  revealWatchEcho();
+  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rcg-repeat');
+  timers.push(setTimeout(revealWatchEcho,700));
 }
+$('recog_repeatBtn').onclick=useRepeat;
 
 function startRound(){
   if(phase!=='idle')return;
   clrT();canTap=false;stopTimer();stopFullStrobe();firstTapDone=false;attemptNum=0;
   genPatterns();
   resetCells();$('recog_actBtn').disabled=true;$('recog_restartBtn').style.display='none';
+  $('recog_repeatBtn').classList.add('rcg-show');$('recog_repeatBtn').disabled=false;
   updateHUD();
   $('recog_hPf').textContent='--';
   revealWatchEcho();
@@ -389,31 +398,17 @@ function handleTap(idx){
     timers.push(setTimeout(roundSuccess,700));
   }else{
     cellSt(idx,'rcg-wrong');
-    if(attemptNum<2){
-      attemptNum++;
-      var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
-      msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rcg-repeat');
-      timers.push(setTimeout(function(){resetCells();repeatRound()},900));
-    }else{
-      revealAnswer();
-      endGame(idx,true);
-    }
+    revealAnswer();
+    endGame(idx,true);
   }
 }
 
 function handleTimeout(){
   if(phase!=='finding')return;
   canTap=false;stopFullStrobe();
-  if(attemptNum<2){
-    attemptNum++;
-    var upcomingPts2=attemptNum===1?g.cellCount*5:g.cellCount*1;
-    msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts2,'rcg-repeat');
-    timers.push(setTimeout(function(){resetCells();repeatRound()},900));
-  }else{
-    revealAnswer();
-    msg("TIME'S UP!",'rcg-miss');
-    endGame(null,true);
-  }
+  revealAnswer();
+  msg("TIME'S UP!",'rcg-miss');
+  endGame(null,true);
 }
 
 function revealAnswer(){cellSt(changedCell,'rcg-reveal-answer',changePos+1);cellSt(originalCell,'rcg-reveal-original',changePos+1)}
@@ -448,6 +443,7 @@ function autoNextRound(){if(phase!=='idle')return;resetCells();stopTimer();$('re
 
 function endGame(wrongIdx,alreadyRevealed){
   phase='idle';clrT();stopFullStrobe();stopTimer();
+  $('recog_repeatBtn').classList.remove('rcg-show');
   if(wrongIdx!==null&&!alreadyRevealed){cellSt(wrongIdx,'rcg-wrong');revealAnswer();}
   g.streak=0;updateHUD();
   if(!alreadyRevealed)msg('WRONG CELL — GAME OVER!','rcg-miss');
@@ -458,6 +454,7 @@ function endGame(wrongIdx,alreadyRevealed){
 
 function showFinalScore(){
   phase='idle';clrT();resetCells();updateHUD();$('recog_hPf').textContent='--';
+  $('recog_repeatBtn').classList.remove('rcg-show');
   if(gameMode==='training'){
     msg(g.roundsDone+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' · SCORE '+g.sc,'rcg-miss');
   }else{
@@ -469,6 +466,7 @@ function showFinalScore(){
 
 function showTrainingComplete(){
   phase='idle';clrT();resetCells();updateHUD();$('recog_hPf').textContent='--';
+  $('recog_repeatBtn').classList.remove('rcg-show');
   msg('🏆 '+TRAINING_ROUNDS+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' COMPLETE! · SCORE '+g.sc,'rcg-perfect');
   $('recog_actBtn').textContent="PLAY AGAIN";$('recog_actBtn').onclick=restartGame;$('recog_actBtn').disabled=false;
   $('recog_restartBtn').style.display='none';
@@ -479,6 +477,7 @@ function restartGame(){
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
   attemptNum=0;
   resetCells();updateHUD();$('recog_hPf').textContent='--';
+  $('recog_repeatBtn').classList.remove('rcg-show');
   msg("TAP LET'S GO!",'rcg-watch');
   $('recog_actBtn').textContent="LET'S GO";$('recog_actBtn').onclick=startRound;$('recog_actBtn').disabled=false;$('recog_restartBtn').style.display='none';
 }
