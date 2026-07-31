@@ -137,7 +137,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
     <div class="rby-top-box"><div class="rby-top-label" id="replay_hRdLbl">Sequence</div><div class="rby-top-val" id="replay_hRd">3</div></div>
     <div class="rby-top-box"><div class="rby-top-label" id="replay_hLvLbl">Best</div><div class="rby-top-val" id="replay_hLv">0</div></div>
     <div class="rby-top-box"><div class="rby-top-label">Streak</div><div class="rby-top-val" id="replay_hSt">0</div></div>
-    <div class="rby-top-box"><div class="rby-top-label">Attempt</div><div class="rby-top-val" id="replay_hAtt">1/3</div></div>
+    <div class="rby-top-box"><div class="rby-top-label">Repeats Left</div><div class="rby-top-val" id="replay_hAtt">2</div></div>
     <div class="rby-top-box"><div class="rby-top-label">Timer</div><div class="rby-top-val" id="replay_hTr">--</div></div>
   </div>
   <div class="rby-clockbar"><div class="rby-clockbar-fill" id="replay_clockFill" style="width:0%"></div></div>
@@ -147,6 +147,7 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
   <div class="rby-bottombar">
     <button class="rby-bot-btn" id="replay_menuBtn">← Home<span>Settings</span></button>
     <button class="rby-bot-btn rby-start-btn" id="replay_actBtn">LET'S GO</button>
+    <button class="rby-bot-btn rby-repeat-btn" id="replay_repeatBtn">↻ REPEAT<span>2 per round</span></button>
     <button class="rby-bot-btn" id="replay_restartBtn" style="display:none;visibility:hidden;pointer-events:none;width:0;height:0;padding:0;margin:0;border:0;overflow:hidden;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);color:#8892a0;font-size:.8rem" onclick="restartGame()">↺ Restart<span style="color:#555">Level 1</span></button>
   </div>
 </div>
@@ -273,7 +274,7 @@ function updateHUD(){
     $('replay_hLv').textContent=g.best;
   }
   $('replay_hSt').textContent=g.streak;
-  $('replay_hAtt').textContent=(attemptNum+1)+'/3';
+  $('replay_hAtt').textContent=Math.max(0,2-attemptNum);
   $('replay_ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('replay_msg');el.textContent=txt;el.className='rby-msg-bar '+(cls||'rby-watch')}
@@ -317,11 +318,20 @@ function revealSequence(cb){
 // attemptNum: 0 = first try (full points), 1 = after 1st auto-repeat
 // (5 points), 2 = after 2nd auto-repeat (1 point). Failing attempt 2 ends
 // the game for real.
-function repeatRound(){
+// Manual, player-triggered repeat — up to two per round. Each use shows
+// the same sequence again and locks in a lower score tier: 0 used = full
+// value (cellCount*10), 1 used = cellCount*5, 2 used = cellCount*1.
+// A wrong tap at any point still ends the game immediately — the repeat
+// is a proactive "watch it again" choice, not a safety net after a
+// mistake.
+function useRepeat(){
+  if(phase!=='tapping'||attemptNum>=2)return;
+  attemptNum++;
+  updateHUD();
+  if(attemptNum>=2)$('replay_repeatBtn').disabled=true;
   clrT();stopFullStrobe();stopRecallTimer();
   phase='showing';playerIdx=0;firstTapDone=false;
   resetCells();
-  updateHUD();
   $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
   var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
   msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rby-repeat');
@@ -335,12 +345,15 @@ function repeatRound(){
     });
   },700));
 }
+$('replay_repeatBtn').onclick=useRepeat;
+
 
 function startRound(){
   if(phase!=='idle')return;
   clrT();phase='showing';playerIdx=0;firstTapDone=false;attemptNum=0;
   resetCells();stopFullStrobe();stopRecallTimer();
   $('replay_actBtn').disabled=true;$('replay_restartBtn').style.display='none';
+  $('replay_repeatBtn').classList.add('rby-show');$('replay_repeatBtn').disabled=false;
   updateHUD();
   $('replay_clockFill').style.width='100%';$('replay_hTr').textContent='--';
   sequence=genSeq();
@@ -399,29 +412,18 @@ function handleTap(idx){
       }
     }
   }else{
-    if(attemptNum<2){
-      cellSt(idx,'rby-wrong');
-      attemptNum++;
-      timers.push(setTimeout(function(){resetCells();repeatRound()},500));
-    }else{
-      endGame(idx);
-    }
+    endGame(idx);
   }
 }
 
 function handleTimeout(){
   if(phase!=='tapping')return;
-  if(attemptNum<2){
-    attemptNum++;
-    resetCells();
-    repeatRound();
-  }else{
-    endGame(null);
-  }
+  endGame(null);
 }
 
 function endGame(wrongIdx){
   phase='idle';clrT();stopFullStrobe();stopRecallTimer();
+  $('replay_repeatBtn').classList.remove('rby-show');
   if(wrongIdx!==null)cellSt(wrongIdx,'rby-wrong');
   g.streak=0;updateHUD();
   msg(wrongIdx!==null?'WRONG ORDER — GAME OVER!':'⏱ TIME UP — GAME OVER!','rby-miss');
@@ -436,6 +438,7 @@ function autoNextRound(){if(phase!=='idle')return;resetCells();$('replay_clockFi
 
 function showFinalScore(){
   phase='idle';clrT();resetCells();updateHUD();$('replay_clockFill').style.width='0%';$('replay_hTr').textContent='--';
+  $('replay_repeatBtn').classList.remove('rby-show');
   if(gameMode==='training'){
     msg(g.roundsDone+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' · SCORE '+g.sc,'rby-miss');
   }else{
@@ -447,6 +450,7 @@ function showFinalScore(){
 
 function showTrainingComplete(){
   phase='idle';clrT();resetCells();updateHUD();$('replay_clockFill').style.width='0%';$('replay_hTr').textContent='--';
+  $('replay_repeatBtn').classList.remove('rby-show');
   msg('🏆 '+TRAINING_ROUNDS+'/'+TRAINING_ROUNDS+' — LEVEL '+trainingLevel+' COMPLETE! · SCORE '+g.sc,'rby-perfect');
   $('replay_actBtn').textContent="PLAY AGAIN";$('replay_actBtn').onclick=restartGame;$('replay_actBtn').disabled=false;
   $('replay_restartBtn').style.display='none';
@@ -457,6 +461,7 @@ function restartGame(){
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
   attemptNum=0;
   resetCells();updateHUD();$('replay_clockFill').style.width='0%';$('replay_hTr').textContent='--';
+  $('replay_repeatBtn').classList.remove('rby-show');
   msg("TAP LET'S GO!",'rby-watch');
   $('replay_actBtn').textContent="LET'S GO";$('replay_actBtn').onclick=startRound;$('replay_actBtn').disabled=false;$('replay_restartBtn').style.display='none';
 }
