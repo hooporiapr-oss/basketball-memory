@@ -64,6 +64,14 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
 .rcg-timerbar-fill.rcg-warn{background:#FFD700}
 .rcg-timerbar-fill.rcg-danger{background:#FF1493}
 .rcg-msg-bar{text-align:center;font-size:1.1rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;min-height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 10px}
+.rcg-msg-bar.rcg-repeat{
+  color:#ffd35a;background:rgba(255,211,90,.14);border-radius:10px;
+  animation:rcgRepeatFlash .5s ease-out;
+}
+@keyframes rcgRepeatFlash{
+  0%{transform:scale(1.06);background:rgba(255,211,90,.4)}
+  100%{transform:scale(1);background:rgba(255,211,90,.14)}
+}
 .rcg-msg-bar.rcg-watch{color:#ffd35a}.rcg-msg-bar.rcg-echo{color:#ff9500}.rcg-msg-bar.rcg-go{color:#ff9500}.rcg-msg-bar.rcg-perfect{color:#00D9A5}.rcg-msg-bar.rcg-miss{color:#FF1493}
 .rcg-stars{display:flex;gap:8px;justify-content:center;align-items:center;flex-shrink:0;padding:2px 0}
 .rcg-star{font-size:1rem;opacity:.2;transition:all .3s}
@@ -382,8 +390,9 @@ function handleTap(idx){
   }else{
     cellSt(idx,'rcg-wrong');
     if(attemptNum<2){
-      msg('NOT QUITE — WATCH AGAIN','rcg-miss');
       attemptNum++;
+      var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+      msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'rcg-repeat');
       timers.push(setTimeout(function(){resetCells();repeatRound()},900));
     }else{
       revealAnswer();
@@ -396,8 +405,9 @@ function handleTimeout(){
   if(phase!=='finding')return;
   canTap=false;stopFullStrobe();
   if(attemptNum<2){
-    msg("TIME'S UP — WATCH AGAIN",'rcg-miss');
     attemptNum++;
+    var upcomingPts2=attemptNum===1?g.cellCount*5:g.cellCount*1;
+    msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts2,'rcg-repeat');
     timers.push(setTimeout(function(){resetCells();repeatRound()},900));
   }else{
     revealAnswer();
