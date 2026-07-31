@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+if (sessionStorage.getItem('hoop-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Basketball Recall | Hooporia</title>
@@ -261,7 +266,7 @@ function resizeCourtToFit(){
 window.addEventListener('resize',resizeCourtToFit);
 
 $('menuBtn').onclick=function(){stopFullStrobe();stopRecallTimer();$('screen-game').style.display='none';$('screen-intro').style.display='flex'};
-$('seqExitBtn').onclick=function(){window.location.href='hooporia-lab.html';};
+$('seqExitBtn').onclick=function(){window.location.href='index.html';};
 $('fsBtnTop').onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
 
 var cells=[];
