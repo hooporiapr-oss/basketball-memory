@@ -285,7 +285,7 @@ function updateHUD(){
     $('hLv').textContent=g.best;
   }
   $('hSt').textContent=g.streak;
-  $('hAtt').textContent=Math.max(0,2-attemptNum);
+  $('hAtt').textContent=Math.max(0,2-repeatOfferNum);
   $('ps1').textContent=g.cellCount;
 }
 function msg(txt,cls){var el=$('msg');el.textContent=txt;el.className='msg-bar '+(cls||'watch')}
@@ -310,7 +310,26 @@ function startRecallTimer(){
 }
 function stopRecallTimer(){if(recallRAF){cancelAnimationFrame(recallRAF);recallRAF=null}}
 
-var phase='idle',pattern=[],playerIdx=0,timers=[],firstTapDone=false,attemptNum=0;
+// Same clock, different consequence: while offering a repeat window, if
+// nothing is clicked before this runs out, it counts as forfeiting the
+// chance — same as if the answer itself had been wrong.
+var repeatWindowDeadline=0,repeatWindowRAF=null;
+function startRepeatWindowTimer(){
+  var dur=getBeatMs();
+  repeatWindowDeadline=performance.now()+dur;
+  function tick(){
+    var remain=repeatWindowDeadline-performance.now();
+    var pct=Math.max(0,remain/dur);
+    $('clockFill').style.width=(pct*100)+'%';
+    $('hPf').textContent=Math.max(0,remain/1000).toFixed(1)+'s';
+    if(remain<=0){repeatWindowRAF=null;handleRepeatWindowMiss();return}
+    if(phase==='repeat-window')repeatWindowRAF=requestAnimationFrame(tick);
+  }
+  repeatWindowRAF=requestAnimationFrame(tick);
+}
+function stopRepeatWindowTimer(){if(repeatWindowRAF){cancelAnimationFrame(repeatWindowRAF);repeatWindowRAF=null}}
+
+var phase='idle',pattern=[],playerIdx=0,timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 
 function revealPattern(cb){
@@ -322,26 +341,53 @@ function revealPattern(cb){
   },showMs));
 }
 
-// Manual, player-triggered repeat — up to two per round. Each use shows
-// the same pattern again and locks in a lower score tier: 0 used = full
-// value (cellCount*10), 1 used = cellCount*5, 2 used = cellCount*1.
-// Getting the tap wrong at any point still ends the game immediately —
-// the repeat is a proactive "watch it again" choice, not a safety net
-// after a mistake.
-function useRepeat(){
-  if(phase!=='tapping'||attemptNum>=2)return;
-  attemptNum++;
-  updateHUD();
-  if(attemptNum>=2)$('repeatBtn').disabled=true;
+// A wrong answer no longer ends the game outright — it opens a timed
+// window where the player must actively click REPEAT to get another
+// chance. Missing that window (timeout) counts the same as failing it.
+// Up to two such windows per round: 1st repeat used = cellCount*5 if
+// then correct, 2nd repeat used = cellCount*1. A failure (wrong tap or
+// window timeout) while already on the 2nd window ends the game.
+function handleFailure(wrongIdx){
+  if(wrongIdx!==null)cellSt(wrongIdx,'wrong');
+  if(repeatOfferNum<2){
+    repeatOfferNum++;
+    timers.push(setTimeout(offerRepeatWindow,500));
+  }else{
+    endGame(wrongIdx);
+  }
+}
+
+function offerRepeatWindow(){
   clrT();stopFullStrobe();stopRecallTimer();
+  phase='repeat-window';
+  resetCells();
+  $('repeatBtn').classList.add('show');$('repeatBtn').disabled=false;
+  updateHUD();
+  $('clockFill').style.width='100%';$('hPf').textContent='--';
+  var upcomingPts=repeatOfferNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT AVAILABLE — CLICK NOW! ('+upcomingPts+' PTS)','repeat');
+  startRepeatWindowTimer();
+}
+
+function handleRepeatWindowMiss(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  handleFailure(null);
+}
+
+function useRepeat(){
+  if(phase!=='repeat-window')return;
+  stopRepeatWindowTimer();
+  attemptNum++;
+  $('repeatBtn').disabled=true;
+  clrT();stopFullStrobe();
   phase='showing';playerIdx=0;firstTapDone=false;
   resetCells();
   $('clockFill').style.width='100%';$('hPf').textContent='--';
-  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
-  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'repeat');
+  var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+pts,'repeat');
   timers.push(setTimeout(function(){
     revealPattern(function(){
-      var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
       msg('⚡ RECALL NOW! ('+pts+' PT'+(pts===1?'':'S')+')','go');
       phase='tapping';
       startFullStrobe();
@@ -353,10 +399,10 @@ $('repeatBtn').onclick=useRepeat;
 
 function startRound(){
   if(phase!=='idle')return;
-  clrT();phase='showing';playerIdx=0;firstTapDone=false;attemptNum=0;
+  clrT();phase='showing';playerIdx=0;firstTapDone=false;attemptNum=0;repeatOfferNum=0;
   resetCells();stopFullStrobe();stopRecallTimer();
   $('actBtn').disabled=true;$('restartBtn').style.display='none';
-  $('repeatBtn').classList.add('show');$('repeatBtn').disabled=false;
+  $('repeatBtn').classList.remove('show');
   updateHUD();
   $('clockFill').style.width='100%';$('hPf').textContent='--';
   var indices=shuffle(Array.from({length:50},(_,i)=>i)).slice(0,g.cellCount);
@@ -413,17 +459,17 @@ function handleTap(idx){
       }
     }
   }else{
-    endGame(idx);
+    handleFailure(idx);
   }
 }
 
 function handleTimeout(){
   if(phase!=='tapping')return;
-  endGame(null);
+  handleFailure(null);
 }
 
 function endGame(wrongIdx){
-  phase='idle';clrT();stopFullStrobe();stopRecallTimer();
+  phase='idle';clrT();stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
   $('repeatBtn').classList.remove('show');
   if(wrongIdx!==null)cellSt(wrongIdx,'wrong');
   g.streak=0;updateHUD();
@@ -458,9 +504,9 @@ function showTrainingComplete(){
 }
 
 function restartGame(){
-  clrT();phase='idle';stopFullStrobe();stopRecallTimer();
+  clrT();phase='idle';stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
-  attemptNum=0;
+  attemptNum=0;repeatOfferNum=0;
   resetCells();updateHUD();$('clockFill').style.width='0%';$('hPf').textContent='--';
   $('repeatBtn').classList.remove('show');
   msg("TAP LET'S GO!",'watch');
