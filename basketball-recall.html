@@ -310,25 +310,6 @@ function startRecallTimer(){
 }
 function stopRecallTimer(){if(recallRAF){cancelAnimationFrame(recallRAF);recallRAF=null}}
 
-// Same clock, different consequence: while offering a repeat window, if
-// nothing is clicked before this runs out, it counts as forfeiting the
-// chance — same as if the answer itself had been wrong.
-var repeatWindowDeadline=0,repeatWindowRAF=null;
-function startRepeatWindowTimer(){
-  var dur=getBeatMs();
-  repeatWindowDeadline=performance.now()+dur;
-  function tick(){
-    var remain=repeatWindowDeadline-performance.now();
-    var pct=Math.max(0,remain/dur);
-    $('clockFill').style.width=(pct*100)+'%';
-    $('hPf').textContent=Math.max(0,remain/1000).toFixed(1)+'s';
-    if(remain<=0){repeatWindowRAF=null;handleRepeatWindowMiss();return}
-    if(phase==='repeat-window')repeatWindowRAF=requestAnimationFrame(tick);
-  }
-  repeatWindowRAF=requestAnimationFrame(tick);
-}
-function stopRepeatWindowTimer(){if(repeatWindowRAF){cancelAnimationFrame(repeatWindowRAF);repeatWindowRAF=null}}
-
 var phase='idle',pattern=[],playerIdx=0,timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 
@@ -341,12 +322,13 @@ function revealPattern(cb){
   },showMs));
 }
 
-// A wrong answer no longer ends the game outright — it opens a timed
-// window where the player must actively click REPEAT to get another
-// chance. Missing that window (timeout) counts the same as failing it.
-// Up to two such windows per round: 1st repeat used = cellCount*5 if
-// then correct, 2nd repeat used = cellCount*1. A failure (wrong tap or
-// window timeout) while already on the 2nd window ends the game.
+// A wrong answer no longer ends the game outright — the player gets a
+// chance to click REPEAT and try again. The pressure stays where it
+// belongs: on recalling the pattern within the beat. Deciding whether
+// to use a repeat is untimed — the clock only runs again once they've
+// actually committed to trying. Up to two repeats per round: 1st used =
+// cellCount*5 if then correct, 2nd used = cellCount*1. A failure while
+// already on the 2nd (final) repeat ends the game.
 function handleFailure(wrongIdx){
   if(wrongIdx!==null)cellSt(wrongIdx,'wrong');
   if(repeatOfferNum<2){
@@ -365,19 +347,11 @@ function offerRepeatWindow(){
   updateHUD();
   $('clockFill').style.width='100%';$('hPf').textContent='--';
   var upcomingPts=repeatOfferNum===1?g.cellCount*5:g.cellCount*1;
-  msg('↻ REPEAT AVAILABLE — CLICK NOW! ('+upcomingPts+' PTS)','repeat');
-  startRepeatWindowTimer();
-}
-
-function handleRepeatWindowMiss(){
-  if(phase!=='repeat-window')return;
-  stopRepeatWindowTimer();
-  handleFailure(null);
+  msg('↻ REPEAT AVAILABLE — TAP WHEN READY ('+upcomingPts+' PTS)','repeat');
 }
 
 function useRepeat(){
   if(phase!=='repeat-window')return;
-  stopRepeatWindowTimer();
   attemptNum++;
   $('repeatBtn').disabled=true;
   clrT();stopFullStrobe();
@@ -469,7 +443,7 @@ function handleTimeout(){
 }
 
 function endGame(wrongIdx){
-  phase='idle';clrT();stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
+  phase='idle';clrT();stopFullStrobe();stopRecallTimer();
   $('repeatBtn').classList.remove('show');
   if(wrongIdx!==null)cellSt(wrongIdx,'wrong');
   g.streak=0;updateHUD();
@@ -504,7 +478,7 @@ function showTrainingComplete(){
 }
 
 function restartGame(){
-  clrT();phase='idle';stopFullStrobe();stopRecallTimer();stopRepeatWindowTimer();
+  clrT();phase='idle';stopFullStrobe();stopRecallTimer();
   g={sc:0,cellCount:getInitialCellCount(),best:0,streak:0,roundsDone:0};
   attemptNum=0;repeatOfferNum=0;
   resetCells();updateHUD();$('clockFill').style.width='0%';$('hPf').textContent='--';
