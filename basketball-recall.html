@@ -71,6 +71,14 @@ html,body{width:100%;height:100%;background:#000;font-family:Arial,sans-serif;co
 .clockbar{height:6px;background:rgba(255,255,255,.08);flex-shrink:0;overflow:hidden}
 .clockbar-fill{height:100%;background:linear-gradient(90deg,#FF6B35,#ffd35a);transition:width .1s linear}
 .msg-bar{text-align:center;font-size:1.1rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;min-height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 10px}
+.msg-bar.repeat{
+  color:#ffd35a;background:rgba(255,211,90,.14);border-radius:10px;
+  animation:repeatFlash .5s ease-out;
+}
+@keyframes repeatFlash{
+  0%{transform:scale(1.06);background:rgba(255,211,90,.4)}
+  100%{transform:scale(1);background:rgba(255,211,90,.14)}
+}
 .msg-bar.watch{color:#ffd35a}.msg-bar.go{color:#FF6B35}.msg-bar.perfect{color:#00D9A5}.msg-bar.miss{color:#FF1493}
 .stars{display:flex;gap:8px;justify-content:center;align-items:center;flex-shrink:0;padding:2px 0}
 .star{font-size:1rem;opacity:.2;transition:all .3s}
@@ -324,7 +332,8 @@ function repeatRound(){
   resetCells();
   updateHUD();
   $('clockFill').style.width='100%';$('hPf').textContent='--';
-  msg('↻ TRY AGAIN — MEMORIZE!','watch');
+  var upcomingPts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+upcomingPts,'repeat');
   timers.push(setTimeout(function(){
     revealPattern(function(){
       var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
@@ -333,7 +342,7 @@ function repeatRound(){
       startFullStrobe();
       startRecallTimer();
     });
-  },500));
+  },700));
 }
 
 function startRound(){
