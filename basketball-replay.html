@@ -318,7 +318,7 @@ function repeatRound(){
   msg('↻ TRY AGAIN — WATCH!','rby-watch');
   timers.push(setTimeout(function(){
     revealSequence(function(){
-      var pts=attemptNum===1?5:1;
+      var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
       msg('⚡ REPLAY IT! ('+pts+' PT'+(pts===1?'':'S')+')','rby-go');
       phase='tapping';
       startFullStrobe();
@@ -367,7 +367,7 @@ function handleTap(idx){
     if(playerIdx>=sequence.length){
       phase='idle';clrT();stopFullStrobe();stopRecallTimer();
       g.streak++;
-      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?5:1);
+      var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?g.cellCount*5:g.cellCount*1);
       g.sc+=pts;
       var ptsLabel=attemptNum===0?'':(' ('+pts+' PT'+(pts===1?'':'S')+') · ');
 
