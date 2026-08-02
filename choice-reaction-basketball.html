@@ -45,6 +45,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   font-size:3.2rem;color:#fff;line-height:1;text-shadow:0 2px 6px rgba(0,0,0,.6),0 0 4px rgba(0,0,0,.5);
 }
 #stimulus.visible{transform:translate(-50%,-50%) scale(1)}
+#stimulus.bpm-pulse{box-shadow:0 0 60px rgba(255,140,0,1),0 0 110px rgba(255,140,0,.7)}
+#stimulus.visible.bpm-pulse{transform:translate(-50%,-50%) scale(1.12)}
 .ripple{position:fixed;border-radius:50%;border:3px solid #7c3aed;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
 @keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
 
@@ -271,9 +273,9 @@ var stimulus=$('stimulus'),stage=$('stage');
 // them. Each mode keeps its own separate box score.
 var MODES={
   flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
-  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
-  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
-  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'}
+  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'}
 };
 var gameMode='flash';
 
@@ -435,6 +437,8 @@ var DIRS=['left','right','up','down'];
 
 var trainingDeadlineTimer=null;
 
+var bpmPulseTimer=null;
+
 function nextTrial(){
   if(phase!=='running')return;
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
@@ -456,37 +460,28 @@ function nextTrial(){
       stimulus.style.top=p.y+'px';
     },550);
   }else{
-    // Training: the ball holds still at a random spot each round — no
-    // wandering — but there's a real deadline tied to the chosen BPM.
-    var deadlineMs=Math.round(60000/MODES[gameMode].bpm);
-    trainingDeadlineTimer=setTimeout(handleTrainingTimeout,deadlineMs);
+    // To The Beat: the ball holds still at a random spot each round —
+    // tapping within the beat turned out to be an unplayable ask, so
+    // there's no deadline anymore. The BPM instead drives a purely
+    // visual pulse on the ball itself — the rhythm is still felt and
+    // seen, it's just not a hard cutoff. Tap whenever, correct or
+    // wrong, and the next target appears immediately in a new spot,
+    // scored exactly like Flash.
+    startBpmPulse(MODES[gameMode].bpm);
   }
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
-function stopTrainingDeadline(){if(trainingDeadlineTimer){clearTimeout(trainingDeadlineTimer);trainingDeadlineTimer=null}}
 
-// A training miss — no response before the beat ran out. Same as a
-// wrong tap: no points (it's not a made shot), but the miss still
-// counts toward the speed average, using the full deadline as the
-// "reaction time" — a shot clock violation still costs you something.
-function handleTrainingTimeout(){
-  if(phase!=='running')return;
-  if(!stimulus.classList.contains('visible'))return;
-  trainingDeadlineTimer=null;
-  var deadlineMs=Math.round(60000/MODES[gameMode].bpm);
-  registerMiss(deadlineMs);
+function startBpmPulse(bpmVal){
+  stopBpmPulse();
+  var beatMs=Math.round(60000/bpmVal);
+  bpmPulseTimer=setInterval(function(){
+    if(!stimulus.classList.contains('visible'))return;
+    stimulus.classList.add('bpm-pulse');
+    setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
+  },beatMs);
 }
-
-function registerMiss(rt){
-  stimulus.classList.remove('visible');
-  idx++;
-  totalRT+=rt;rtCount++;
-  flash('rgba(255,20,147,.28)');
-  msg('✗ MISS! ('+Math.round(rt)+' MS)','wrong');
-  $('hScore').textContent=score;
-  $('hLeft').textContent=Math.max(0,TOTAL-idx);
-  advanceOrEnd();
-}
+function stopBpmPulse(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}}
 
 function advanceOrEnd(){
   if(idx>=TOTAL){
@@ -507,7 +502,7 @@ function handleChoice(side){
 
   var rt=performance.now()-shownAt;
   var isCorrect=(side===currentSide);
-  stopWander();stopTrainingDeadline();
+  stopWander();stopBpmPulse();
   var dotRect=stimulus.getBoundingClientRect();
   var rx=dotRect.left+dotRect.width/2, ry=dotRect.top+dotRect.height/2;
   stimulus.classList.remove('visible');
@@ -539,7 +534,7 @@ $('btnRight').addEventListener('pointerdown',function(e){e.preventDefault();hand
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopWander();stopTrainingDeadline();stimulus.classList.remove('visible');
+  phase='done';clrT();stopWander();stopBpmPulse();stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
