@@ -399,6 +399,8 @@ function randomStagePos(){
 var ARROWS={left:'◀',right:'▶',up:'▲',down:'▼'};
 var DIRS=['left','right','up','down'];
 
+var noResponseTimer=null;
+
 function nextTrial(){
   if(phase!=='running')return;
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
@@ -418,8 +420,26 @@ function nextTrial(){
     stimulus.style.left=p.x+'px';
     stimulus.style.top=p.y+'px';
   },550);
+
+  // No hard per-tap deadline — the whole point of Flash is open,
+  // untimed play. But leaving that fully open let a player just stop
+  // responding and the drill would sit there forever waiting. 5
+  // seconds of real silence on a single target ends the drill outright
+  // — enough room that it's never a rushed feel, but not infinite.
+  stopNoResponseTimer();
+  noResponseTimer=setTimeout(handleNoResponse,5000);
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
+function stopNoResponseTimer(){if(noResponseTimer){clearTimeout(noResponseTimer);noResponseTimer=null}}
+
+function handleNoResponse(){
+  if(phase!=='running')return;
+  if(!stimulus.classList.contains('visible'))return;
+  stopWander();
+  stimulus.classList.remove('visible');
+  msg('✗ NO RESPONSE — 5 SECONDS','wrong');
+  timers.push(setTimeout(endDrill,600));
+}
 
 function advanceOrEnd(){
   if(idx>=TOTAL){
@@ -438,6 +458,7 @@ function handleChoice(side){
   if(tapLocked)return;
   tapLocked=true;setTimeout(function(){tapLocked=false},40);
 
+  stopNoResponseTimer();
   var rt=performance.now()-shownAt;
   var isCorrect=(side===currentSide);
   stopWander();
@@ -472,7 +493,7 @@ $('btnRight').addEventListener('pointerdown',function(e){e.preventDefault();hand
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopWander();stimulus.classList.remove('visible');
+  phase='done';clrT();stopWander();stopNoResponseTimer();stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
