@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FAST BREAK BASKETBALL | Reaction Velocity</title>
+<title>BASKETBALL TO THE BEAT | Reaction Velocity</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;color:#fff;background:#000;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -174,13 +174,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <div id="screen-intro">
   <a class="intro-back" href="/index.html">← Exit</a>
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
-  <div class="vrr-logo">FAST BREAK <span>BASKETBALL</span></div>
+  <div class="vrr-logo">BASKETBALL TO THE <span>BEAT</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat</div>
   <div class="mode-row">
     <button class="mode-btn active" data-mode="flash">FLASH<small>Open · No Limit</small></button>
-    <button class="mode-btn" data-mode="training60">TRAINING<small>60 BPM</small></button>
-    <button class="mode-btn" data-mode="training80">TRAINING<small>80 BPM</small></button>
-    <button class="mode-btn" data-mode="training100">TRAINING<small>100 BPM</small></button>
+    <button class="mode-btn" data-mode="training60">RITNOME<small>60 BPM</small></button>
+    <button class="mode-btn" data-mode="training80">RITNOME<small>80 BPM</small></button>
+    <button class="mode-btn" data-mode="training100">RITNOME<small>100 BPM</small></button>
   </div>
   <div class="rule-t" id="ruleText"><b>50 rounds.</b> A basketball wanders the screen carrying an arrow &mdash; <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
@@ -191,7 +191,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <!-- THE BOX SCORE -->
 <div id="screen-box">
   <div class="box-title">THE <span>BOX SCORE</span></div>
-  <div class="box-sub">Fast Break Basketball · Career Stats</div>
+  <div class="box-sub">Basketball To The Beat · Career Stats</div>
 
   <div class="box-section">
     <div class="box-section-label">Last Game</div>
@@ -266,9 +266,9 @@ var stimulus=$('stimulus'),stage=$('stage');
 // them. Each mode keeps its own separate box score.
 var MODES={
   flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
-  training60:{label:'TRAINING · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
-  training80:{label:'TRAINING · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
-  training100:{label:'TRAINING · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'}
+  training60:{label:'RITNOME · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
+  training80:{label:'RITNOME · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
+  training100:{label:'RITNOME · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'}
 };
 var gameMode='flash';
 
