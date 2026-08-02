@@ -248,41 +248,64 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <script>
 var PACE_MS=600; // one beat at 100 BPM between one choice resolving and the next stimulus
 var TOTAL=50;
-var BEST_KEY='rct-choice-reaction-best';
+function bestKey(){return 'rct-choice-reaction-best-'+gameMode}
+function bestMsKey(){return 'rct-choice-reaction-best-ms-'+gameMode}
 
 function $(id){return document.getElementById(id)}
 
 var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0;
-var BEST_MS_KEY='rct-choice-reaction-best-ms';
 var timers=[],tapLocked=false,shownAt=0,currentSide=null;
 var sessionBest=0, playersThisSession=0;
 var stimulus=$('stimulus'),stage=$('stage');
 
+// Mode selector — Flash (open, no deadline, wandering ball) is the
+// original game. Training locks the ball to one stationary spot per
+// round and gives a real deadline tied to the chosen BPM, for players
+// who need the search-and-react demand split apart before combining
+// them. Each mode keeps its own separate box score.
+var MODES={
+  flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
+  training60:{label:'TRAINING · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
+  training80:{label:'TRAINING · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'},
+  training100:{label:'TRAINING · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still — no wandering. Read the arrow and tap the matching direction before the beat runs out. A miss doesn&#39;t end anything, but it won&#39;t score, and it counts against your speed average.'}
+};
+var gameMode='flash';
+
+document.querySelectorAll('.mode-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    gameMode=btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    $('ruleText').innerHTML=MODES[gameMode].rule;
+    loadBest();
+  });
+});
+
 function loadBest(){
   best=0;
-  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
-  try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
+  try{best=parseInt(localStorage.getItem(bestKey())||'0',10)||0}catch(e){}
+  try{bestAvgMs=parseInt(localStorage.getItem(bestMsKey())||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
   $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' pts</b>'):'';
 }
-function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
-function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
+function saveBest(){try{localStorage.setItem(bestKey(),String(best))}catch(e){}}
+function saveBestMs(){try{localStorage.setItem(bestMsKey(),String(bestAvgMs))}catch(e){}}
 
 // THE BOX SCORE — a personal, on-device stat sheet. No accounts, no
 // names, nothing shared with anyone else; just this player's own career
 // line, the same way a real basketball box score tracks one player's
 // game. Stored as a single JSON blob: running career totals, plus a
 // short rolling list of recent individual games.
-var BOX_KEY='rct-choice-reaction-boxscore';
+function boxKey(){return 'rct-choice-reaction-boxscore-'+gameMode}
 function loadBoxData(){
   try{
-    var raw=localStorage.getItem(BOX_KEY);
+    var raw=localStorage.getItem(boxKey());
     if(raw)return JSON.parse(raw);
   }catch(e){}
   return {gp:0,totalPts:0,totalMade:0,totalAttempts:0,totalMs:0,high:0,recent:[]};
 }
-function saveBoxData(d){try{localStorage.setItem(BOX_KEY,JSON.stringify(d))}catch(e){}}
+function saveBoxData(d){try{localStorage.setItem(boxKey(),JSON.stringify(d))}catch(e){}}
 
 function recordGameToBoxScore(finalScore,made,attempts,avgMs){
   var d=loadBoxData();
@@ -405,6 +428,8 @@ function randomStagePos(){
 var ARROWS={left:'◀',right:'▶',up:'▲',down:'▼'};
 var DIRS=['left','right','up','down'];
 
+var trainingDeadlineTimer=null;
+
 function nextTrial(){
   if(phase!=='running')return;
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
@@ -415,17 +440,59 @@ function nextTrial(){
   stimulus.classList.add('visible');
   shownAt=performance.now();
 
-  // The dot wanders continuously while it waits — direction (the arrow)
-  // is what matters, not where it happens to be standing.
-  if(wanderTimer)clearInterval(wanderTimer);
-  wanderTimer=setInterval(function(){
-    if(!stimulus.classList.contains('visible'))return;
-    var p=randomStagePos();
-    stimulus.style.left=p.x+'px';
-    stimulus.style.top=p.y+'px';
-  },550);
+  if(gameMode==='flash'){
+    // The ball wanders continuously while it waits — direction (the
+    // arrow) is what matters, not where it happens to be standing.
+    if(wanderTimer)clearInterval(wanderTimer);
+    wanderTimer=setInterval(function(){
+      if(!stimulus.classList.contains('visible'))return;
+      var p=randomStagePos();
+      stimulus.style.left=p.x+'px';
+      stimulus.style.top=p.y+'px';
+    },550);
+  }else{
+    // Training: the ball holds still at a random spot each round — no
+    // wandering — but there's a real deadline tied to the chosen BPM.
+    var deadlineMs=Math.round(60000/MODES[gameMode].bpm);
+    trainingDeadlineTimer=setTimeout(handleTrainingTimeout,deadlineMs);
+  }
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
+function stopTrainingDeadline(){if(trainingDeadlineTimer){clearTimeout(trainingDeadlineTimer);trainingDeadlineTimer=null}}
+
+// A training miss — no response before the beat ran out. Same as a
+// wrong tap: no points (it's not a made shot), but the miss still
+// counts toward the speed average, using the full deadline as the
+// "reaction time" — a shot clock violation still costs you something.
+function handleTrainingTimeout(){
+  if(phase!=='running')return;
+  if(!stimulus.classList.contains('visible'))return;
+  trainingDeadlineTimer=null;
+  var deadlineMs=Math.round(60000/MODES[gameMode].bpm);
+  registerMiss(deadlineMs);
+}
+
+function registerMiss(rt){
+  stimulus.classList.remove('visible');
+  idx++;
+  totalRT+=rt;rtCount++;
+  flash('rgba(255,20,147,.28)');
+  msg('✗ MISS! ('+Math.round(rt)+' MS)','wrong');
+  $('hScore').textContent=score;
+  $('hLeft').textContent=Math.max(0,TOTAL-idx);
+  advanceOrEnd();
+}
+
+function advanceOrEnd(){
+  if(idx>=TOTAL){
+    timers.push(setTimeout(endDrill,500));
+  }else{
+    timers.push(setTimeout(function(){
+      if(phase==='running')msg('','go');
+      nextTrial();
+    },PACE_MS));
+  }
+}
 
 function handleChoice(side){
   if(phase!=='running')return;
@@ -435,7 +502,7 @@ function handleChoice(side){
 
   var rt=performance.now()-shownAt;
   var isCorrect=(side===currentSide);
-  stopWander();
+  stopWander();stopTrainingDeadline();
   var dotRect=stimulus.getBoundingClientRect();
   var rx=dotRect.left+dotRect.width/2, ry=dotRect.top+dotRect.height/2;
   stimulus.classList.remove('visible');
@@ -457,14 +524,7 @@ function handleChoice(side){
   $('hScore').textContent=score;
   $('hLeft').textContent=Math.max(0,TOTAL-idx);
 
-  if(idx>=TOTAL){
-    timers.push(setTimeout(endDrill,500));
-  }else{
-    timers.push(setTimeout(function(){
-      if(phase==='running')msg('','go');
-      nextTrial();
-    },PACE_MS));
-  }
+  advanceOrEnd();
 }
 
 $('btnUp').addEventListener('pointerdown',function(e){e.preventDefault();handleChoice('up')});
@@ -474,7 +534,7 @@ $('btnRight').addEventListener('pointerdown',function(e){e.preventDefault();hand
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopWander();stimulus.classList.remove('visible');
+  phase='done';clrT();stopWander();stopTrainingDeadline();stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
