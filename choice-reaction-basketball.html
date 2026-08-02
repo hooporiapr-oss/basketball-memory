@@ -491,9 +491,8 @@ function nextTrial(){
     // blank, strobing screen with the drum still driving the beat, and
     // the same tap rules apply the whole time: tap whenever, correct
     // or wrong, next target appears immediately, scored like Flash.
-    // The one real limit stays: 5 beats of total silence on one target
+    // The one real limit stays: 3 beats of total silence on one target
     // ends the drill outright.
-    beatsSinceTarget=0;
     startBeatLoop(MODES[gameMode].bpm);
   }
 }
@@ -502,37 +501,45 @@ function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=nul
 function startBeatLoop(bpmVal){
   stopBeatLoop();
   var beatMs=Math.round(60000/bpmVal);
-  bpmPulseTimer=setInterval(function(){
-    beatsSinceTarget++;
-    if(beatsSinceTarget===1){
-      // Beat 1 — the target itself pulses, still on screen.
-      if(stimulus.classList.contains('visible')){
-        stimulus.classList.add('bpm-pulse');
-        setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
-      }
-      playDrum();
-      // Right after this first beat's hit, the ball disappears — the
-      // read is over, everything from here is recall against the beat.
-      timers.push(setTimeout(function(){
-        stimulus.classList.remove('visible');
-      },Math.min(180,beatMs*0.3)));
-    }else{
-      // Beat 2 onward — blank, strobing screen, still on the beat.
-      $('beatStrobe').style.transition='none';
-      $('beatStrobe').style.opacity='1';
-      timers.push(setTimeout(function(){
-        $('beatStrobe').style.transition='opacity .08s';
-        $('beatStrobe').style.opacity='0';
-      },Math.min(140,beatMs*0.25)));
-      playDrum();
+  beatsSinceTarget=0;
+  // Beat 1 fires immediately, synchronized with the target actually
+  // appearing — setInterval alone doesn't tick until a full interval
+  // has already elapsed, which was leaving beat 1 silent and the
+  // target's own pulse out of sync with the moment it shows up.
+  runBeatTick(beatMs);
+  bpmPulseTimer=setInterval(function(){runBeatTick(beatMs)},beatMs);
+}
+
+function runBeatTick(beatMs){
+  beatsSinceTarget++;
+  if(beatsSinceTarget===1){
+    // Beat 1 — the target itself pulses, still on screen.
+    if(stimulus.classList.contains('visible')){
+      stimulus.classList.add('bpm-pulse');
+      setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
     }
-    if(beatsSinceTarget>=3){
-      stopBeatLoop();
-      awaitingResponse=false;
-      msg('✗ NO RESPONSE — 3 BEATS','wrong');
-      timers.push(setTimeout(endDrill,400));
-    }
-  },beatMs);
+    playDrum();
+    // Right after this first beat's hit, the ball disappears — the
+    // read is over, everything from here is recall against the beat.
+    timers.push(setTimeout(function(){
+      stimulus.classList.remove('visible');
+    },Math.min(180,beatMs*0.3)));
+  }else{
+    // Beat 2 onward — blank, strobing screen, still on the beat.
+    $('beatStrobe').style.transition='none';
+    $('beatStrobe').style.opacity='1';
+    timers.push(setTimeout(function(){
+      $('beatStrobe').style.transition='opacity .08s';
+      $('beatStrobe').style.opacity='0';
+    },Math.min(140,beatMs*0.25)));
+    playDrum();
+  }
+  if(beatsSinceTarget>=3){
+    stopBeatLoop();
+    awaitingResponse=false;
+    msg('✗ NO RESPONSE — 3 BEATS','wrong');
+    timers.push(setTimeout(endDrill,400));
+  }
 }
 function stopBeatLoop(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}$('beatStrobe').style.opacity='0'}
 
