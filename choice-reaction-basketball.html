@@ -497,8 +497,9 @@ function endDrill(){
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
-  var isNewPts=finalScore>best;
-  var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
+  var completed=(idx>=TOTAL);
+  var isNewPts=completed&&finalScore>best;
+  var isNewMs=completed&&avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
 
@@ -506,16 +507,28 @@ function endDrill(){
   $('endBpm').textContent='Avg '+avgRT+' MS · '+bpmFromMs(avgRT)+' BPM';
   $('endAcc').textContent=correctCount+'/'+TOTAL+' correct · '+accPct+'% accuracy';
 
-  if(isNewPts&&finalScore>0){$('endHead').textContent='🎉 New Best!';$('endSub').textContent='New high score — '+finalScore+' points, '+correctCount+'/'+TOTAL+' correct. Nothing but net!'}
-  else{$('endHead').textContent='Drill Complete!';$('endSub').textContent='Great choices. Next player, beat this number!'}
+  if(!completed){
+    // An early end (no response for 5 seconds) doesn't post to the
+    // career box score — only a genuinely finished 50-round drill
+    // counts as a real game. This keeps the stat line honest instead
+    // of letting a bailed-on session pad the numbers.
+    $('endHead').textContent='Drill Ended Early';
+    $('endSub').textContent="Only a completed 50-round drill posts to your Box Score — this one didn't count. Give it another go!";
+  }else if(isNewPts&&finalScore>0){
+    $('endHead').textContent='🎉 New Best!';$('endSub').textContent='New high score — '+finalScore+' points, '+correctCount+'/'+TOTAL+' correct. Nothing but net!';
+  }else{
+    $('endHead').textContent='Drill Complete!';$('endSub').textContent='Great choices. Next player, beat this number!';
+  }
 
-  if(avgRT>0&&(sessionBest===0||avgRT<sessionBest)){
+  if(completed&&avgRT>0&&(sessionBest===0||avgRT<sessionBest)){
     sessionBest=avgRT;
   }
   playersThisSession++;
   $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best: '+sessionBest+'ms · '+bpmFromMs(sessionBest)+' BPM'):'');
 
-  window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT);
+  if(completed){
+    window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT);
+  }
 
   $('screen-end').style.display='flex';
 }
