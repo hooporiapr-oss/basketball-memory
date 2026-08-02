@@ -16,6 +16,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #stars{position:fixed;inset:0;pointer-events:none;z-index:0}
 #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(124,58,237,.28),0 0 80px rgba(124,58,237,.1)}
 #flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
+#beatStrobe{position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0;background:rgba(255,140,0,.22);transition:opacity .08s}
 
 #hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)}
 .hud-box{text-align:center}
@@ -153,6 +154,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <canvas id="stars"></canvas>
   <div id="edge-glow"></div>
   <div id="flash"></div>
+  <div id="beatStrobe"></div>
 </div>
 
 <div id="hud">
@@ -264,6 +266,7 @@ var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0;
 var timers=[],tapLocked=false,shownAt=0,currentSide=null;
 var sessionBest=0, playersThisSession=0;
+var awaitingResponse=false;
 var stimulus=$('stimulus'),stage=$('stage');
 
 // Mode selector — Flash (open, no deadline, wandering ball) is the
@@ -273,9 +276,9 @@ var stimulus=$('stimulus'),stage=$('stage');
 // them. Each mode keeps its own separate box score.
 var MODES={
   flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
-  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball holds still and pulses to the beat — no wandering, no deadline. Read the arrow and tap the matching direction whenever you&#39;re ready. Right or wrong, the next one appears instantly, scored just like Flash.'}
+  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'}
 };
 var gameMode='flash';
 
@@ -470,6 +473,7 @@ function nextTrial(){
   stimulus.style.top=pos.y+'px';
   stimulus.classList.add('visible');
   shownAt=performance.now();
+  awaitingResponse=true;
 
   if(gameMode==='flash'){
     // The ball wanders continuously while it waits — direction (the
@@ -482,38 +486,55 @@ function nextTrial(){
       stimulus.style.top=p.y+'px';
     },550);
   }else{
-    // To The Beat: the ball holds still at a random spot each round —
-    // tapping within a single beat turned out to be an unplayable ask,
-    // so there's no per-beat deadline anymore. The BPM instead drives a
-    // felt, heard pulse — a visual glow plus a drum hit — on every
-    // beat. Tap whenever, correct or wrong, and the next target
-    // appears immediately in a new spot, scored exactly like Flash.
-    // The one real limit: 5 beats of total silence on a single target
-    // ends the drill outright — this isn't a per-round miss anymore,
-    // it's "you've stopped responding."
+    // To The Beat: the ball only shows for a single beat — just long
+    // enough to read the arrow — then it's gone. From there it's a
+    // blank, strobing screen with the drum still driving the beat, and
+    // the same tap rules apply the whole time: tap whenever, correct
+    // or wrong, next target appears immediately, scored like Flash.
+    // The one real limit stays: 5 beats of total silence on one target
+    // ends the drill outright.
     beatsSinceTarget=0;
-    startBpmPulse(MODES[gameMode].bpm);
+    startBeatLoop(MODES[gameMode].bpm);
   }
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
 
-function startBpmPulse(bpmVal){
-  stopBpmPulse();
+function startBeatLoop(bpmVal){
+  stopBeatLoop();
   var beatMs=Math.round(60000/bpmVal);
   bpmPulseTimer=setInterval(function(){
-    if(!stimulus.classList.contains('visible'))return;
-    stimulus.classList.add('bpm-pulse');
-    setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
-    playDrum();
     beatsSinceTarget++;
+    if(beatsSinceTarget===1){
+      // Beat 1 — the target itself pulses, still on screen.
+      if(stimulus.classList.contains('visible')){
+        stimulus.classList.add('bpm-pulse');
+        setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
+      }
+      playDrum();
+      // Right after this first beat's hit, the ball disappears — the
+      // read is over, everything from here is recall against the beat.
+      timers.push(setTimeout(function(){
+        stimulus.classList.remove('visible');
+      },Math.min(180,beatMs*0.3)));
+    }else{
+      // Beat 2 onward — blank, strobing screen, still on the beat.
+      $('beatStrobe').style.transition='none';
+      $('beatStrobe').style.opacity='1';
+      timers.push(setTimeout(function(){
+        $('beatStrobe').style.transition='opacity .08s';
+        $('beatStrobe').style.opacity='0';
+      },Math.min(140,beatMs*0.25)));
+      playDrum();
+    }
     if(beatsSinceTarget>=5){
-      stopBpmPulse();
+      stopBeatLoop();
+      awaitingResponse=false;
       msg('✗ NO RESPONSE — 5 BEATS','wrong');
       timers.push(setTimeout(endDrill,400));
     }
   },beatMs);
 }
-function stopBpmPulse(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}}
+function stopBeatLoop(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}$('beatStrobe').style.opacity='0'}
 
 function advanceOrEnd(){
   if(idx>=TOTAL){
@@ -528,13 +549,14 @@ function advanceOrEnd(){
 
 function handleChoice(side){
   if(phase!=='running')return;
-  if(!stimulus.classList.contains('visible'))return;
+  if(!awaitingResponse)return;
   if(tapLocked)return;
   tapLocked=true;setTimeout(function(){tapLocked=false},40);
 
   var rt=performance.now()-shownAt;
   var isCorrect=(side===currentSide);
-  stopWander();stopBpmPulse();
+  awaitingResponse=false;
+  stopWander();stopBeatLoop();
   var dotRect=stimulus.getBoundingClientRect();
   var rx=dotRect.left+dotRect.width/2, ry=dotRect.top+dotRect.height/2;
   stimulus.classList.remove('visible');
@@ -566,7 +588,7 @@ $('btnRight').addEventListener('pointerdown',function(e){e.preventDefault();hand
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopWander();stopBpmPulse();stimulus.classList.remove('visible');
+  phase='done';clrT();stopWander();stopBeatLoop();awaitingResponse=false;stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
