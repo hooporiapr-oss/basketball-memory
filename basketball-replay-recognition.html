@@ -117,8 +117,13 @@ var $=id=>document.getElementById(id);
 
 var bpm=100;
 var STARTING_CELLS=3;
-function getShowMs(){return Math.round((60000/bpm)*0.65)}
-function getGapMs(){return Math.round((60000/bpm)*0.35)}
+// Slowed from the original 0.65/0.35 split — pure sequence recall in
+// stage 1 has no easier warm-up before it (unlike Set & Order, which
+// eases in with an any-order stage first), so the reveal itself needs
+// to give more real time to actually encode the order, not just react
+// to it.
+function getShowMs(){return Math.round((60000/bpm)*1.0)}
+function getGapMs(){return Math.round((60000/bpm)*0.5)}
 function getFindMs(){
   var base=Math.round((60000/bpm)*10);
   var extra=(g.cellCount-STARTING_CELLS)*1500;
