@@ -276,9 +276,9 @@ var stimulus=$('stimulus'),stage=$('stage');
 // them. Each mode keeps its own separate box score.
 var MODES={
   flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
-  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 5 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'}
+  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
+  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'}
 };
 var gameMode='flash';
 
@@ -526,10 +526,10 @@ function startBeatLoop(bpmVal){
       },Math.min(140,beatMs*0.25)));
       playDrum();
     }
-    if(beatsSinceTarget>=5){
+    if(beatsSinceTarget>=3){
       stopBeatLoop();
       awaitingResponse=false;
-      msg('✗ NO RESPONSE — 5 BEATS','wrong');
+      msg('✗ NO RESPONSE — 3 BEATS','wrong');
       timers.push(setTimeout(endDrill,400));
     }
   },beatMs);
