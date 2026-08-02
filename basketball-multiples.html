@@ -234,7 +234,7 @@ function updateHUD(){
 }
 function msg(txt,cls){var el=$('mult_msg');el.textContent=txt;el.className='mult-msg-bar '+(cls||'mult-watch')}
 
-var phase='idle',original=[],echo=[],changedCells=[],originalCells=[],foundCells=[],timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
+var phase='idle',original=[],echo=[],changedCells=[],originalCells=[],foundCells=[],roundPointsEarned=0,timers=[],firstTapDone=false,attemptNum=0,repeatOfferNum=0;
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 function shuffle(arr){for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t}return arr}
 
@@ -246,7 +246,7 @@ function genPatterns(){
   var indices=shuffle(Array.from({length:50},(_,i)=>i)).slice(0,len);
   original=indices.slice();echo=indices.slice();
   var changePositions=shuffle(Array.from({length:len},(_,i)=>i)).slice(0,g.changeCount);
-  changedCells=[];originalCells=[];foundCells=[];
+  changedCells=[];originalCells=[];foundCells=[];roundPointsEarned=0;
   var used=indices.slice();
   changePositions.forEach(function(pos){
     originalCells.push(indices[pos]);
@@ -294,8 +294,8 @@ function offerRepeatWindow(){
   $('mult_repeatBtn').classList.add('mult-show');$('mult_repeatBtn').disabled=false;
   updateHUD();
   $('mult_hPf').textContent='--';
-  var upcomingPts=repeatOfferNum===1?g.cellCount*g.changeCount*5:g.cellCount*g.changeCount*1;
-  msg('↻ REPEAT AVAILABLE — TAP WHEN READY ('+upcomingPts+' PTS)','mult-repeat');
+  var upcomingPts=repeatOfferNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT AVAILABLE — TAP WHEN READY ('+upcomingPts+' PTS EACH)','mult-repeat');
 }
 
 function useRepeat(){
@@ -305,8 +305,8 @@ function useRepeat(){
   clrT();canTap=false;stopFullStrobe();
   resetCells();
   $('mult_hPf').textContent='--';
-  var pts=attemptNum===1?g.cellCount*g.changeCount*5:g.cellCount*g.changeCount*1;
-  msg('↻ REPEAT '+attemptNum+' · WORTH '+pts+' TOTAL','mult-repeat');
+  var pts=attemptNum===1?g.cellCount*5:g.cellCount*1;
+  msg('↻ REPEAT '+attemptNum+' · WORTH '+pts+' PER CHANGE','mult-repeat');
   timers.push(setTimeout(revealWatchEcho,700));
 }
 $('mult_repeatBtn').onclick=useRepeat;
@@ -336,9 +336,21 @@ function startEcho(){
 }
 
 function startFind(){
-  phase='finding';canTap=true;resetCells();foundCells=[];
+  phase='finding';canTap=true;resetCells();
+  // Any changes found on an earlier attempt (before a mistake) stay
+  // found — this is the whole fix: a mistake only ever costs you the
+  // chance to find what's LEFT, never what you already correctly found.
+  foundCells.forEach(function(c){
+    var posInChange=changedCells.indexOf(c);
+    cellSt(c,'mult-correct',posInChange+1);
+  });
+  var remaining=g.changeCount-foundCells.length;
   var pts=attemptNum===1?g.cellCount*g.changeCount*5:g.cellCount*g.changeCount*1;
-  msg(attemptNum===0?'⚡ FIND ALL '+g.changeCount+' CHANGES':'⚡ FIND ALL '+g.changeCount+' CHANGES ('+pts+' PTS)','mult-go');
+  if(foundCells.length>0){
+    msg('⚡ FIND THE REMAINING '+remaining,'mult-go');
+  }else{
+    msg(attemptNum===0?'⚡ FIND ALL '+g.changeCount+' CHANGES':'⚡ FIND ALL '+g.changeCount+' CHANGES ('+pts+' PTS EACH)','mult-go');
+  }
   updateHUD();
   startFullStrobe();
   var dur=getFindMs();
@@ -358,12 +370,15 @@ function handleTap(idx){
     foundCells.push(idx);
     var posInChange=changedCells.indexOf(idx);
     cellSt(idx,'mult-correct',posInChange+1);
+    var pts=attemptNum===0?g.cellCount*10:(attemptNum===1?g.cellCount*5:g.cellCount*1);
+    roundPointsEarned+=pts;
+    g.sc+=pts;
     updateHUD();
     if(foundCells.length>=changedCells.length){
       canTap=false;stopTimer();clrT();
       timers.push(setTimeout(roundSuccess,500));
     }else{
-      msg('⚡ '+foundCells.length+'/'+g.changeCount+' FOUND — KEEP GOING','mult-go');
+      msg('⚡ '+foundCells.length+'/'+g.changeCount+' FOUND (+'+pts+') — KEEP GOING','mult-go');
     }
   }else if(changedCells.indexOf(idx)===-1){
     canTap=false;stopTimer();clrT();
@@ -386,16 +401,16 @@ function revealAnswer(){
 function roundSuccess(){
   phase='idle';
   g.streak++;
-  var pts=attemptNum===0?g.cellCount*g.changeCount*10:(attemptNum===1?g.cellCount*g.changeCount*5:g.cellCount*g.changeCount*1);
-  g.sc+=pts;
-  var ptsLabel=attemptNum===0?'':(' ('+pts+' PTS) · ');
+  // Scoring already happened per-change in handleTap() as each one was
+  // found — this just reports the total, which may blend tiers if a
+  // repeat was used partway through the round.
 
   if(g.cellCount>g.best)g.best=g.cellCount;
   g.roundsCompleted++;
   g.cellCount++;
   if(g.changeCount<MAX_CHANGES&&g.roundsCompleted%CHANGE_GROWS_EVERY===0)g.changeCount++;
   updateHUD();
-  msg('✅ '+(attemptNum===0?'ALL FOUND! ':'ALL FOUND'+ptsLabel)+'GROWING...','mult-perfect');
+  msg('✅ ALL FOUND! +'+roundPointsEarned+' · GROWING...','mult-perfect');
   timers.push(setTimeout(function(){resetCells();autoNextRound()},700));
 }
 
