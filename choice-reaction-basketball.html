@@ -437,7 +437,29 @@ var DIRS=['left','right','up','down'];
 
 var trainingDeadlineTimer=null;
 
-var bpmPulseTimer=null;
+var bpmPulseTimer=null,beatsSinceTarget=0;
+var drumCtx=null;
+function drumAC(){if(!drumCtx){try{drumCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return drumCtx}
+
+// A short, low kick-drum thump — a quick pitch drop plus a fast
+// amplitude decay, the same synthesis trick real drum-machine kicks
+// use. Distinct from the higher, tonal notes elsewhere in the game so
+// it reads as rhythm, not as a correct/wrong cue.
+function playDrum(){
+  var c=drumAC();if(!c)return;
+  try{
+    if(c.state==='suspended')c.resume();
+    var o=c.createOscillator(),g2=c.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(150,c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(45,c.currentTime+0.12);
+    g2.gain.setValueAtTime(0.35,c.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.18);
+    o.connect(g2);g2.connect(c.destination);
+    o.start();
+    o.stop(c.currentTime+0.2);
+  }catch(e){}
+}
 
 function nextTrial(){
   if(phase!=='running')return;
@@ -461,12 +483,15 @@ function nextTrial(){
     },550);
   }else{
     // To The Beat: the ball holds still at a random spot each round —
-    // tapping within the beat turned out to be an unplayable ask, so
-    // there's no deadline anymore. The BPM instead drives a purely
-    // visual pulse on the ball itself — the rhythm is still felt and
-    // seen, it's just not a hard cutoff. Tap whenever, correct or
-    // wrong, and the next target appears immediately in a new spot,
-    // scored exactly like Flash.
+    // tapping within a single beat turned out to be an unplayable ask,
+    // so there's no per-beat deadline anymore. The BPM instead drives a
+    // felt, heard pulse — a visual glow plus a drum hit — on every
+    // beat. Tap whenever, correct or wrong, and the next target
+    // appears immediately in a new spot, scored exactly like Flash.
+    // The one real limit: 5 beats of total silence on a single target
+    // ends the drill outright — this isn't a per-round miss anymore,
+    // it's "you've stopped responding."
+    beatsSinceTarget=0;
     startBpmPulse(MODES[gameMode].bpm);
   }
 }
@@ -479,6 +504,13 @@ function startBpmPulse(bpmVal){
     if(!stimulus.classList.contains('visible'))return;
     stimulus.classList.add('bpm-pulse');
     setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
+    playDrum();
+    beatsSinceTarget++;
+    if(beatsSinceTarget>=5){
+      stopBpmPulse();
+      msg('✗ NO RESPONSE — 5 BEATS','wrong');
+      timers.push(setTimeout(endDrill,400));
+    }
   },beatMs);
 }
 function stopBpmPulse(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}}
