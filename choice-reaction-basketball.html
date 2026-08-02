@@ -291,11 +291,10 @@ function handleChoice(side){
 
   if(isCorrect){
     correctCount++;
-    var pts=Math.max(1,Math.round(300-rt/4));
-    score+=pts;
+    score+=2;
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
     $('hLastMs').textContent=Math.round(rt);
-    msg('✓ '+Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM','correct');
+    msg('✓ 2PT SHOT! ('+Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM)','correct');
   }else{
     flash('rgba(255,20,147,.28)');
     msg('✗ WRONG DIRECTION! ('+Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM)','wrong');
