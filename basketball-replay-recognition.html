@@ -284,10 +284,17 @@ function useRepeat(){
         startTimer(getFindMs());
       });
     }else{
-      revealEcho(function(){
-        msg('⚡ SPOT THE CHANGE! ('+pts+' PTS)','rs-go');
-        phase='tapping';canTap=true;
-        startTimer(getFindMs());
+      revealSequence(function(){
+        timers.push(setTimeout(function(){
+          msg('NOW WITH ONE CHANGE...','rs-echo');
+          timers.push(setTimeout(function(){
+            revealEcho(function(){
+              msg('⚡ SPOT THE CHANGE! ('+pts+' PTS)','rs-go');
+              phase='tapping';canTap=true;
+              startTimer(getFindMs());
+            });
+          },400));
+        },300));
       });
     }
   },700));
@@ -325,12 +332,22 @@ function beginStage2(){
   resetCells();stopTimer();
   updateHUD();
   $('rs_clockFill').style.width='100%';$('rs_hPf').textContent='--';
-  msg('WATCH AGAIN — ONE NOTE WILL CHANGE...','rs-echo');
+  msg('WATCH AGAIN...','rs-watch');
   timers.push(setTimeout(function(){
-    revealEcho(function(){
-      msg('⚡ SPOT THE CHANGE!','rs-go');
-      phase='tapping';canTap=true;
-      startTimer(getFindMs());
+    // First, the same sequence exactly as it was in stage 1 — this is
+    // the fresh reference point the echo needs to actually be compared
+    // against, not just a single "here's the changed version" reveal.
+    revealSequence(function(){
+      timers.push(setTimeout(function(){
+        msg('NOW WITH ONE CHANGE...','rs-echo');
+        timers.push(setTimeout(function(){
+          revealEcho(function(){
+            msg('⚡ SPOT THE CHANGE!','rs-go');
+            phase='tapping';canTap=true;
+            startTimer(getFindMs());
+          });
+        },400));
+      },300));
     });
   },500));
 }
