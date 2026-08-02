@@ -16,7 +16,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #stars{position:fixed;inset:0;pointer-events:none;z-index:0}
 #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(124,58,237,.28),0 0 80px rgba(124,58,237,.1)}
 #flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
-#beatStrobe{position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0;background:rgba(255,140,0,.22);transition:opacity .08s}
 
 #hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)}
 .hud-box{text-align:center}
@@ -46,8 +45,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   font-size:3.2rem;color:#fff;line-height:1;text-shadow:0 2px 6px rgba(0,0,0,.6),0 0 4px rgba(0,0,0,.5);
 }
 #stimulus.visible{transform:translate(-50%,-50%) scale(1)}
-#stimulus.bpm-pulse{box-shadow:0 0 60px rgba(255,140,0,1),0 0 110px rgba(255,140,0,.7)}
-#stimulus.visible.bpm-pulse{transform:translate(-50%,-50%) scale(1.12)}
 .ripple{position:fixed;border-radius:50%;border:3px solid #7c3aed;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
 @keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
 
@@ -99,11 +96,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .box-recent-row:last-child{border-bottom:none}
 .box-recent-row b{color:#ffd35a}
 .box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(255,140,0,.5);background:rgba(255,140,0,.1);border-radius:14px;color:#ff8c00;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
-.mode-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:440px;margin-bottom:18px}
-.mode-btn{height:56px;border:2px solid rgba(124,58,237,.4);background:rgba(124,58,237,.08);border-radius:12px;color:#fff;font-size:.72rem;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.mode-btn small{font-size:.55rem;color:#9fb3c8;font-weight:700}
-.mode-btn.active{border-color:#ff8c00;background:rgba(255,140,0,.16);color:#ff8c00;box-shadow:0 0 16px rgba(255,140,0,.4)}
-.mode-btn.active small{color:#ffb35c}
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
@@ -154,7 +146,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <canvas id="stars"></canvas>
   <div id="edge-glow"></div>
   <div id="flash"></div>
-  <div id="beatStrobe"></div>
 </div>
 
 <div id="hud">
@@ -185,12 +176,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">CHOICE REACTION <span>BASKETBALL</span></div>
   <div class="vrr-sub">Reaction Velocity · To The Beat</div>
-  <div class="mode-row">
-    <button class="mode-btn active" data-mode="flash">FLASH<small>Open · No Limit</small></button>
-    <button class="mode-btn" data-mode="training60">TO THE BEAT<small>60 BPM</small></button>
-    <button class="mode-btn" data-mode="training80">TO THE BEAT<small>80 BPM</small></button>
-    <button class="mode-btn" data-mode="training100">TO THE BEAT<small>100 BPM</small></button>
-  </div>
   <div class="rule-t" id="ruleText"><b>50 rounds.</b> A basketball wanders the screen carrying an arrow &mdash; <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
@@ -257,8 +242,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 <script>
 var PACE_MS=600; // one beat at 100 BPM between one choice resolving and the next stimulus
 var TOTAL=50;
-function bestKey(){return 'rct-choice-reaction-best-'+gameMode}
-function bestMsKey(){return 'rct-choice-reaction-best-ms-'+gameMode}
+var BEST_KEY='rct-choice-reaction-best';
+var BEST_MS_KEY='rct-choice-reaction-best-ms';
 
 function $(id){return document.getElementById(id)}
 
@@ -266,56 +251,32 @@ var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0;
 var timers=[],tapLocked=false,shownAt=0,currentSide=null;
 var sessionBest=0, playersThisSession=0;
-var awaitingResponse=false;
 var stimulus=$('stimulus'),stage=$('stage');
-
-// Mode selector — Flash (open, no deadline, wandering ball) is the
-// original game. Training locks the ball to one stationary spot per
-// round and gives a real deadline tied to the chosen BPM, for players
-// who need the search-and-react demand split apart before combining
-// them. Each mode keeps its own separate box score.
-var MODES={
-  flash:{label:'FLASH',rule:'<b>50 rounds.</b> A basketball wanders the screen carrying an arrow — <b>&#9664; &#9654; &#9650; &#9660;</b>. Read the arrow, not the position, and tap the matching direction as fast as you can. No deadline — just how fast, and how right, you are.'},
-  training60:{label:'TO THE BEAT · 60 BPM',bpm:60,rule:'<b>50 rounds, 60 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training80:{label:'TO THE BEAT · 80 BPM',bpm:80,rule:'<b>50 rounds, 80 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'},
-  training100:{label:'TO THE BEAT · 100 BPM',bpm:100,rule:'<b>50 rounds, 100 BPM.</b> The basketball flashes just once, for a single beat, then it&#39;s gone. From there it&#39;s a blank, strobing screen with the drum still going — tap the direction you saw whenever you&#39;re ready. 3 beats of silence ends the drill. Right or wrong, the next one appears instantly, scored just like Flash.'}
-};
-var gameMode='flash';
-
-document.querySelectorAll('.mode-btn').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    gameMode=btn.dataset.mode;
-    document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('active')});
-    btn.classList.add('active');
-    $('ruleText').innerHTML=MODES[gameMode].rule;
-    loadBest();
-  });
-});
 
 function loadBest(){
   best=0;
-  try{best=parseInt(localStorage.getItem(bestKey())||'0',10)||0}catch(e){}
-  try{bestAvgMs=parseInt(localStorage.getItem(bestMsKey())||'0',10)||0}catch(e){bestAvgMs=0}
+  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
+  try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
   $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' pts</b>'):'';
 }
-function saveBest(){try{localStorage.setItem(bestKey(),String(best))}catch(e){}}
-function saveBestMs(){try{localStorage.setItem(bestMsKey(),String(bestAvgMs))}catch(e){}}
+function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
+function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
 
 // THE BOX SCORE — a personal, on-device stat sheet. No accounts, no
 // names, nothing shared with anyone else; just this player's own career
 // line, the same way a real basketball box score tracks one player's
 // game. Stored as a single JSON blob: running career totals, plus a
 // short rolling list of recent individual games.
-function boxKey(){return 'rct-choice-reaction-boxscore-'+gameMode}
+var BOX_KEY='rct-choice-reaction-boxscore';
 function loadBoxData(){
   try{
-    var raw=localStorage.getItem(boxKey());
+    var raw=localStorage.getItem(BOX_KEY);
     if(raw)return JSON.parse(raw);
   }catch(e){}
   return {gp:0,totalPts:0,totalMade:0,totalAttempts:0,totalMs:0,high:0,recent:[]};
 }
-function saveBoxData(d){try{localStorage.setItem(boxKey(),JSON.stringify(d))}catch(e){}}
+function saveBoxData(d){try{localStorage.setItem(BOX_KEY,JSON.stringify(d))}catch(e){}}
 
 function recordGameToBoxScore(finalScore,made,attempts,avgMs){
   var d=loadBoxData();
@@ -438,32 +399,6 @@ function randomStagePos(){
 var ARROWS={left:'◀',right:'▶',up:'▲',down:'▼'};
 var DIRS=['left','right','up','down'];
 
-var trainingDeadlineTimer=null;
-
-var bpmPulseTimer=null,beatsSinceTarget=0;
-var drumCtx=null;
-function drumAC(){if(!drumCtx){try{drumCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return drumCtx}
-
-// A short, low kick-drum thump — a quick pitch drop plus a fast
-// amplitude decay, the same synthesis trick real drum-machine kicks
-// use. Distinct from the higher, tonal notes elsewhere in the game so
-// it reads as rhythm, not as a correct/wrong cue.
-function playDrum(){
-  var c=drumAC();if(!c)return;
-  try{
-    if(c.state==='suspended')c.resume();
-    var o=c.createOscillator(),g2=c.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(150,c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(45,c.currentTime+0.12);
-    g2.gain.setValueAtTime(0.35,c.currentTime);
-    g2.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.18);
-    o.connect(g2);g2.connect(c.destination);
-    o.start();
-    o.stop(c.currentTime+0.2);
-  }catch(e){}
-}
-
 function nextTrial(){
   if(phase!=='running')return;
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
@@ -473,75 +408,18 @@ function nextTrial(){
   stimulus.style.top=pos.y+'px';
   stimulus.classList.add('visible');
   shownAt=performance.now();
-  awaitingResponse=true;
 
-  if(gameMode==='flash'){
-    // The ball wanders continuously while it waits — direction (the
-    // arrow) is what matters, not where it happens to be standing.
-    if(wanderTimer)clearInterval(wanderTimer);
-    wanderTimer=setInterval(function(){
-      if(!stimulus.classList.contains('visible'))return;
-      var p=randomStagePos();
-      stimulus.style.left=p.x+'px';
-      stimulus.style.top=p.y+'px';
-    },550);
-  }else{
-    // To The Beat: the ball only shows for a single beat — just long
-    // enough to read the arrow — then it's gone. From there it's a
-    // blank, strobing screen with the drum still driving the beat, and
-    // the same tap rules apply the whole time: tap whenever, correct
-    // or wrong, next target appears immediately, scored like Flash.
-    // The one real limit stays: 3 beats of total silence on one target
-    // ends the drill outright.
-    startBeatLoop(MODES[gameMode].bpm);
-  }
+  // The dot wanders continuously while it waits — direction (the arrow)
+  // is what matters, not where it happens to be standing.
+  if(wanderTimer)clearInterval(wanderTimer);
+  wanderTimer=setInterval(function(){
+    if(!stimulus.classList.contains('visible'))return;
+    var p=randomStagePos();
+    stimulus.style.left=p.x+'px';
+    stimulus.style.top=p.y+'px';
+  },550);
 }
 function stopWander(){if(wanderTimer){clearInterval(wanderTimer);wanderTimer=null}}
-
-function startBeatLoop(bpmVal){
-  stopBeatLoop();
-  var beatMs=Math.round(60000/bpmVal);
-  beatsSinceTarget=0;
-  // Beat 1 fires immediately, synchronized with the target actually
-  // appearing — setInterval alone doesn't tick until a full interval
-  // has already elapsed, which was leaving beat 1 silent and the
-  // target's own pulse out of sync with the moment it shows up.
-  runBeatTick(beatMs);
-  bpmPulseTimer=setInterval(function(){runBeatTick(beatMs)},beatMs);
-}
-
-function runBeatTick(beatMs){
-  beatsSinceTarget++;
-  if(beatsSinceTarget===1){
-    // Beat 1 — the target itself pulses, still on screen.
-    if(stimulus.classList.contains('visible')){
-      stimulus.classList.add('bpm-pulse');
-      setTimeout(function(){stimulus.classList.remove('bpm-pulse')},Math.min(180,beatMs*0.3));
-    }
-    playDrum();
-    // Right after this first beat's hit, the ball disappears — the
-    // read is over, everything from here is recall against the beat.
-    timers.push(setTimeout(function(){
-      stimulus.classList.remove('visible');
-    },Math.min(180,beatMs*0.3)));
-  }else{
-    // Beat 2 onward — blank, strobing screen, still on the beat.
-    $('beatStrobe').style.transition='none';
-    $('beatStrobe').style.opacity='1';
-    timers.push(setTimeout(function(){
-      $('beatStrobe').style.transition='opacity .08s';
-      $('beatStrobe').style.opacity='0';
-    },Math.min(140,beatMs*0.25)));
-    playDrum();
-  }
-  if(beatsSinceTarget>=3){
-    stopBeatLoop();
-    awaitingResponse=false;
-    msg('✗ NO RESPONSE — 3 BEATS','wrong');
-    timers.push(setTimeout(endDrill,400));
-  }
-}
-function stopBeatLoop(){if(bpmPulseTimer){clearInterval(bpmPulseTimer);bpmPulseTimer=null}$('beatStrobe').style.opacity='0'}
 
 function advanceOrEnd(){
   if(idx>=TOTAL){
@@ -556,14 +434,13 @@ function advanceOrEnd(){
 
 function handleChoice(side){
   if(phase!=='running')return;
-  if(!awaitingResponse)return;
+  if(!stimulus.classList.contains('visible'))return;
   if(tapLocked)return;
   tapLocked=true;setTimeout(function(){tapLocked=false},40);
 
   var rt=performance.now()-shownAt;
   var isCorrect=(side===currentSide);
-  awaitingResponse=false;
-  stopWander();stopBeatLoop();
+  stopWander();
   var dotRect=stimulus.getBoundingClientRect();
   var rx=dotRect.left+dotRect.width/2, ry=dotRect.top+dotRect.height/2;
   stimulus.classList.remove('visible');
@@ -595,7 +472,7 @@ $('btnRight').addEventListener('pointerdown',function(e){e.preventDefault();hand
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopWander();stopBeatLoop();awaitingResponse=false;stimulus.classList.remove('visible');
+  phase='done';clrT();stopWander();stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
