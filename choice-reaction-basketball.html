@@ -505,7 +505,15 @@ function endDrill(){
 
   $('endNum').textContent=finalScore;
   $('endBpm').textContent='Avg '+avgRT+' MS · '+bpmFromMs(avgRT)+' BPM';
-  $('endAcc').textContent=correctCount+'/'+TOTAL+' correct · '+accPct+'% accuracy';
+  // Accuracy % is a completed-game stat, same as the Box Score itself —
+  // showing "8/50 ... 100%" on a bailed session reads like a completion
+  // percentage when it's actually accuracy across only the rounds
+  // attempted. An incomplete drill just shows rounds played instead.
+  if(completed){
+    $('endAcc').textContent=correctCount+'/'+TOTAL+' correct · '+accPct+'% accuracy';
+  }else{
+    $('endAcc').textContent=idx+'/'+TOTAL+' rounds played';
+  }
 
   if(!completed){
     // An early end (no response for 5 seconds) doesn't post to the
