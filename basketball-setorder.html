@@ -197,8 +197,20 @@ var stage1AttemptNum=0,stage1RepeatOfferNum=0,stage2AttemptNum=0,stage2RepeatOff
 function clrT(){timers.forEach(clearTimeout);timers=[]}
 
 function revealPattern(cb){
-  pattern.forEach(function(idx,n){cellSt(idx,'so-lit',n+1)});
-  cb();
+  if(stage===1){
+    // Stage 1: plain lit cells, no numbers — order genuinely doesn't
+    // matter yet, so showing numbers here would just be misleading.
+    pattern.forEach(function(idx){cellSt(idx,'so-lit')});
+  }else{
+    // Stage 2: same cells, now numbered — this is the only reveal where
+    // order is part of what's being shown.
+    pattern.forEach(function(idx,n){cellSt(idx,'so-lit',n+1)});
+  }
+  var showMs=Math.round(60000/bpm)+((g.cellCount-1)*120);
+  timers.push(setTimeout(function(){
+    pattern.forEach(function(idx){cellSt(idx)});
+    cb();
+  },showMs));
 }
 
 // Two fully independent repeat pools — stage 1 (any order) and stage 2
