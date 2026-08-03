@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CHOICE REACTION VR | Reaction Velocity</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;color:#fff;background:#000}
+#overlay{position:fixed;inset:0;z-index:20;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:20px}
+#hud-top{display:flex;gap:24px;background:rgba(0,0,0,.6);padding:10px 22px;border-radius:14px;border:1px solid rgba(124,58,237,.4)}
+.hud-box{text-align:center}
+.hud-label{font-size:.55rem;color:#a78bfa;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.hud-val{font-size:1.4rem;font-weight:900}
+#msg{font-size:1.2rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 20px currentColor;text-align:center}
+#msg.watch{color:#7c3aed}#msg.go{color:#ffd35a}#msg.correct{color:#00D9A5}#msg.wrong{color:#FF1493}
+#screen-intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a0818 0%,#000 70%);padding:20px;text-align:center;pointer-events:all}
+.vrr-logo{font-size:2.1rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 60px rgba(124,58,237,1);margin-bottom:6px}
+.vrr-logo span{color:#7c3aed}
+.vrr-sub{font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:#7c3aed;margin-bottom:26px}
+.rule-t{font-size:.9rem;color:#cbd5e1;line-height:1.6;max-width:440px;margin-bottom:26px}
+.rule-t b{color:#fff}
+.big-btn{width:100%;max-width:440px;height:64px;border:none;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-size:1.15rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 40px rgba(124,58,237,.7);margin-bottom:14px}
+#vrEnterBtnHolder{margin-top:6px}
+#vrEnterBtnHolder button{position:static!important;width:100%;max-width:440px;height:56px;border-radius:16px!important}
+.note-t{font-size:.7rem;color:#7fa8c0;max-width:420px;line-height:1.6;margin-top:18px}
+#screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a0818 0%,#000 70%);text-align:center;padding:20px;pointer-events:all}
+.final-num{font-size:5rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
+.final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
+#screen-end h2{font-size:1.6rem;font-weight:900;margin:20px 0 8px}
+#endSub{font-size:.9rem;color:#9fb3c8;line-height:1.6;max-width:400px}
+.next-player-btn{margin-top:24px;height:56px;padding:0 36px;border:none;border-radius:16px;background:linear-gradient(120deg,#7c3aed,#5b21b6);color:#fff;font-size:1.05rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+#crosshair{position:fixed;top:50%;left:50%;width:10px;height:10px;margin:-5px;border-radius:50%;border:2px solid rgba(255,255,255,.8);z-index:15;pointer-events:none}
+#devnote{position:fixed;bottom:8px;left:8px;z-index:30;font-size:.6rem;color:#556;pointer-events:none;max-width:300px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<div id="crosshair"></div>
+<div id="overlay">
+  <div id="hud-top">
+    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
+    <div class="hud-box"><div class="hud-label">Left</div><div class="hud-val" id="hLeft">50</div></div>
+    <div class="hud-box"><div class="hud-label">Last</div><div class="hud-val" id="hLastMs">--</div></div>
+  </div>
+  <div id="msg" class="watch"></div>
+  <div style="height:20px"></div>
+</div>
+
+<div id="screen-intro">
+  <div class="vrr-logo">CHOICE <span>REACTION</span> VR</div>
+  <div class="vrr-sub">Reaction Velocity · Spatial</div>
+  <div class="rule-t"><b>50 rounds.</b> A basketball drifts through the space around you carrying an arrow — <b>◀ ▶ ▲ ▼</b>. Turn and find it, read the arrow, then tap the matching direction on the panel in front of you. The panel stays put in your view — only the ball moves through space.</div>
+  <button class="big-btn" id="bigStart">▶ START (DESKTOP PREVIEW)</button>
+  <div id="vrEnterBtnHolder"></div>
+  <div class="note-t" id="devnote2">Desktop preview: look around by dragging with the mouse, tap the direction panel with a click. On a headset, look around naturally and use the controller trigger to tap the panel.</div>
+</div>
+
+<div id="screen-end">
+  <div class="final-num" id="endNum">0</div>
+  <div class="final-label">Total Points</div>
+  <h2 id="endHead">Drill Complete!</h2>
+  <div id="endSub"></div>
+  <button class="next-player-btn" id="nextPlayerBtn">▶ Next Player</button>
+</div>
+
+<div id="devnote">Desktop preview mode — drag to look around, click to tap the panel.</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+// ---------- Renderer / scene / camera ----------
+var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
+document.body.insertBefore(renderer.domElement, document.body.firstChild);
+renderer.domElement.style.position = 'fixed';
+renderer.domElement.style.inset = '0';
+renderer.domElement.style.zIndex = '0';
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 60);
+camera.position.set(0, 1.6, 0);
+
+window.addEventListener('resize', function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Ambient + directional light so the basketball actually reads as a
+// sphere rather than a flat silhouette.
+scene.add(new THREE.AmbientLight(0x554466, 1.1));
+var sun = new THREE.DirectionalLight(0xffffff, 1.0);
+sun.position.set(2, 3, 2);
+scene.add(sun);
+
+// ---------- Void / starfield environment ----------
+(function buildStarfield() {
+  var starCount = 800;
+  var positions = new Float32Array(starCount * 3);
+  for (var i = 0; i < starCount; i++) {
+    // Distribute stars on a large sphere shell around the player so
+    // they never appear to move with head-turns (matching a real void
+    // backdrop), at varied radii for a little depth.
+    var r = 18 + Math.random() * 20;
+    var theta = Math.random() * Math.PI * 2;
+    var phi = Math.acos((Math.random() * 2) - 1);
+    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.cos(phi);
+    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  }
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  var mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, sizeAttenuation: true, transparent: true, opacity: 0.85 });
+  scene.add(new THREE.Points(geo, mat));
+  scene.background = new THREE.Color(0x05030a);
+  scene.fog = new THREE.FogExp2(0x05030a, 0.02);
+})();
+
+// ---------- The basketball target (moves through world space) ----------
+var ARROWS = { left: '◀', right: '▶', up: '▲', down: '▼' };
+var DIRS = ['left', 'right', 'up', 'down'];
+
+function makeArrowSprite(glyph) {
+  var canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 170px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,.6)';
+  ctx.shadowBlur = 14;
+  ctx.fillText(glyph, 128, 138);
+  var tex = new THREE.CanvasTexture(canvas);
+  var mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true });
+  var sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.22, 0.22, 1);
+  sprite.position.set(0, 0, 0.161);
+  return sprite;
+}
+
+var targetGroup = new THREE.Group();
+var ballMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.16, 32, 32),
+  new THREE.MeshStandardMaterial({ color: 0xff8c00, roughness: 0.55, metalness: 0.05, emissive: 0x552200, emissiveIntensity: 0.35 })
+);
+// Frustum culling is disabled here deliberately — with this mesh nested
+// inside a group that's both repositioned (lerp) and rotated (lookAt)
+// every frame, Three.js's automatic bounding-sphere cull was producing
+// false negatives, hiding the ball even when it was genuinely in view.
+// The target group is small and always near the player, so skipping
+// culling on it costs nothing meaningful.
+ballMesh.frustumCulled = false;
+targetGroup.add(ballMesh);
+var arrowSprite = null; // (re)created per round with the current glyph
+targetGroup.visible = false;
+scene.add(targetGroup);
+
+function setTargetArrow(side) {
+  if (arrowSprite) targetGroup.remove(arrowSprite);
+  arrowSprite = makeArrowSprite(ARROWS[side]);
+  arrowSprite.frustumCulled = false;
+  targetGroup.add(arrowSprite);
+}
+
+// Places the target at a random point around the player — genuine 3D
+// spread (distance, height, angle), not a flat plane. Kept within a
+// comfortable reach of dead-ahead so it's findable by turning, not
+// hidden directly behind the player.
+function randomSpatialPosition() {
+  var dist = 1.4 + Math.random() * 1.8;         // 1.4m–3.2m out
+  var yaw = (Math.random() * 220 - 110) * Math.PI / 180; // ~±110° around forward
+  var pitch = (Math.random() * 70 - 35) * Math.PI / 180; // ~±35° up/down
+  var x = dist * Math.sin(yaw) * Math.cos(pitch);
+  var y = 1.6 + dist * Math.sin(pitch);
+  var z = -dist * Math.cos(yaw) * Math.cos(pitch);
+  return new THREE.Vector3(x, y, z);
+}
+
+var driftTarget = new THREE.Vector3();
+var isDrifting = false;
+function startDrift() {
+  isDrifting = true;
+  pickNewDriftTarget();
+}
+function pickNewDriftTarget() {
+  driftTarget.copy(randomSpatialPosition());
+}
+function stopDrift() { isDrifting = false; }
+
+// ---------- Head-locked HUD button panel (parented to the camera) ----------
+// This is the actual answer to "buttons stay in the same position" in a
+// spatial scene: anything parented to the camera object moves with the
+// player's head automatically, so the panel always sits in the same
+// spot in their view no matter which way they've turned to find the
+// ball. Positioned to sit low the way the on-screen buttons did.
+var hudGroup = new THREE.Group();
+hudGroup.position.set(0, -0.28, -0.6);
+camera.add(hudGroup);
+scene.add(camera);
+
+var buttonMeshes = {};
+function makeButton(dir, x, y) {
+  var geo = new THREE.PlaneGeometry(0.11, 0.09);
+  var canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  var ctx = canvas.getContext('2d');
+  function draw(active) {
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.fillStyle = active ? 'rgba(124,58,237,.85)' : 'rgba(20,10,40,.85)';
+    ctx.strokeStyle = 'rgba(167,139,250,.9)';
+    ctx.lineWidth = 6;
+    roundRect(ctx, 6, 6, 116, 116, 18);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 64px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(ARROWS[dir], 64, 68);
+  }
+  function roundRect(c, x0, y0, w, h, r) {
+    c.beginPath();
+    c.moveTo(x0 + r, y0);
+    c.arcTo(x0 + w, y0, x0 + w, y0 + h, r);
+    c.arcTo(x0 + w, y0 + h, x0, y0 + h, r);
+    c.arcTo(x0, y0 + h, x0, y0, r);
+    c.arcTo(x0, y0, x0 + w, y0, r);
+    c.closePath();
+  }
+  draw(false);
+  var tex = new THREE.CanvasTexture(canvas);
+  var mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y, 0);
+  mesh.userData.dir = dir;
+  mesh.userData.redraw = draw;
+  mesh.userData.tex = tex;
+  hudGroup.add(mesh);
+  buttonMeshes[dir] = mesh;
+  return mesh;
+}
+makeButton('up', 0, 0.1);
+makeButton('left', -0.13, 0);
+makeButton('right', 0.13, 0);
+makeButton('down', 0, -0.1);
+
+function flashButton(dir) {
+  var m = buttonMeshes[dir];
+  if (!m) return;
+  m.userData.redraw(true);
+  m.userData.tex.needsUpdate = true;
+  setTimeout(function () {
+    m.userData.redraw(false);
+    m.userData.tex.needsUpdate = true;
+  }, 140);
+}
+
+// ---------- Game state (same rules as Choice Reaction Basketball) ----------
+var TOTAL = 50;
+var idx = 0, score = 0, correctCount = 0, totalRT = 0, rtCount = 0;
+var phase = 'idle';
+var currentSide = null, shownAt = 0;
+var noResponseTimer = null;
+
+function $(id) { return document.getElementById(id); }
+function msg(t, c) { var e = $('msg'); e.textContent = t; e.className = c || 'watch'; }
+
+function stopNoResponseTimer() { if (noResponseTimer) { clearTimeout(noResponseTimer); noResponseTimer = null; } }
+
+function runDrill() {
+  phase = 'running'; idx = 0; score = 0; correctCount = 0; totalRT = 0; rtCount = 0;
+  $('hScore').textContent = '0'; $('hLastMs').textContent = '--'; $('hLeft').textContent = TOTAL;
+  msg('GET READY...', 'go');
+  setTimeout(function () { msg('', 'go'); nextTrial(); }, 900);
+}
+
+function nextTrial() {
+  if (phase !== 'running') return;
+  currentSide = DIRS[Math.floor(Math.random() * DIRS.length)];
+  setTargetArrow(currentSide);
+  pickNewDriftTarget();
+  targetGroup.position.copy(driftTarget);
+  targetGroup.visible = true;
+  startDrift();
+  shownAt = performance.now();
+
+  // Same "no response" protection as Flash mode — 5 real seconds of
+  // silence on one target ends the drill outright.
+  stopNoResponseTimer();
+  noResponseTimer = setTimeout(handleNoResponse, 5000);
+}
+
+function handleNoResponse() {
+  if (phase !== 'running') return;
+  stopDrift();
+  targetGroup.visible = false;
+  msg('✗ NO RESPONSE — 5 SECONDS', 'wrong');
+  setTimeout(endDrill, 600);
+}
+
+function handleChoice(side) {
+  if (phase !== 'running') return;
+  if (!targetGroup.visible) return;
+  stopNoResponseTimer();
+  flashButton(side);
+
+  var rt = performance.now() - shownAt;
+  var isCorrect = (side === currentSide);
+  stopDrift();
+  targetGroup.visible = false;
+
+  idx++; totalRT += rt; rtCount++;
+
+  if (isCorrect) {
+    correctCount++;
+    score += 2;
+    $('hLastMs').textContent = Math.round(rt);
+    msg('✓ 2PT SHOT! (' + Math.round(rt) + ' MS)', 'correct');
+  } else {
+    msg('✗ WRONG DIRECTION! (' + Math.round(rt) + ' MS)', 'wrong');
+  }
+  $('hScore').textContent = score;
+  $('hLeft').textContent = Math.max(0, TOTAL - idx);
+
+  if (idx >= TOTAL) {
+    setTimeout(endDrill, 500);
+  } else {
+    setTimeout(function () { if (phase === 'running') msg('', 'go'); nextTrial(); }, 600);
+  }
+}
+
+function endDrill() {
+  if (phase === 'done') return;
+  phase = 'done'; stopNoResponseTimer(); stopDrift(); targetGroup.visible = false;
+  var completed = (idx >= TOTAL);
+  var avgRT = rtCount ? Math.round(totalRT / rtCount) : 0;
+  $('endNum').textContent = score;
+  if (!completed) {
+    $('endHead').textContent = 'Drill Ended Early';
+    $('endSub').textContent = "Only a completed 50-round drill posts to your Box Score — this one didn't count. Give it another go!";
+  } else {
+    $('endHead').textContent = 'Drill Complete!';
+    $('endSub').textContent = correctCount + '/' + TOTAL + ' correct · avg ' + avgRT + ' ms';
+  }
+  $('screen-end').style.display = 'flex';
+}
+
+$('bigStart').onclick = function () {
+  $('screen-intro').style.display = 'none';
+  runDrill();
+};
+$('nextPlayerBtn').onclick = function () {
+  $('screen-end').style.display = 'none';
+  runDrill();
+};
+
+// ---------- Interaction: VR controller select + desktop mouse fallback ----------
+// Raycasting against the head-locked button meshes. In VR this uses the
+// controller's own ray; on desktop (no headset) it uses the mouse, so
+// the exact same hit-testing logic can be verified in a normal browser.
+var raycaster = new THREE.Raycaster();
+function hitTestButtons(originMatrixWorld) {
+  var tempMatrix = new THREE.Matrix4();
+  tempMatrix.identity().extractRotation(originMatrixWorld);
+  raycaster.ray.origin.setFromMatrixPosition(originMatrixWorld);
+  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+  var hits = raycaster.intersectObjects(Object.values(buttonMeshes));
+  if (hits.length > 0) handleChoice(hits[0].object.userData.dir);
+}
+
+function setupController(index) {
+  var controller = renderer.xr.getController(index);
+  controller.addEventListener('select', function () {
+    hitTestButtons(controller.matrixWorld);
+  });
+  scene.add(controller);
+  return controller;
+}
+setupController(0);
+setupController(1);
+
+// Desktop fallback: click-to-tap using the mouse against a ray cast
+// from the camera through the clicked screen point — lets the exact
+// same button hit-testing be verified without a headset.
+var mouse = new THREE.Vector2();
+renderer.domElement.addEventListener('click', function (e) {
+  if (renderer.xr.isPresenting) return; // real VR uses controller select, not clicks
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  var hits = raycaster.intersectObjects(Object.values(buttonMeshes));
+  if (hits.length > 0) handleChoice(hits[0].object.userData.dir);
+});
+
+// Desktop look-around (drag to turn), since there's no headset tracking
+// outside VR. This does not run once a real XR session is presenting —
+// WebXR supplies head tracking itself at that point.
+var lookYaw = 0, lookPitch = 0, dragging = false, lastX = 0, lastY = 0;
+renderer.domElement.addEventListener('pointerdown', function (e) { if (!renderer.xr.isPresenting) { dragging = true; lastX = e.clientX; lastY = e.clientY; } });
+window.addEventListener('pointerup', function () { dragging = false; });
+window.addEventListener('pointermove', function (e) {
+  if (!dragging || renderer.xr.isPresenting) return;
+  lookYaw -= (e.clientX - lastX) * 0.005;
+  lookPitch -= (e.clientY - lastY) * 0.005;
+  lookPitch = Math.max(-1.2, Math.min(1.2, lookPitch));
+  lastX = e.clientX; lastY = e.clientY;
+});
+
+// ---------- VR enter button ----------
+if ('xr' in navigator) {
+  var vrBtn = VRButton.createButton(renderer);
+  $('vrEnterBtnHolder').appendChild(vrBtn);
+} else {
+  $('devnote2').textContent = 'WebXR not detected in this browser — running desktop preview only.';
+}
+
+// ---------- Render loop ----------
+var clock = new THREE.Clock();
+renderer.setAnimationLoop(function () {
+  var dt = clock.getDelta();
+
+  if (!renderer.xr.isPresenting) {
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = lookYaw;
+    camera.rotation.x = lookPitch;
+  }
+
+  if (isDrifting) {
+    targetGroup.position.lerp(driftTarget, Math.min(1, dt * 0.6));
+    if (targetGroup.position.distanceTo(driftTarget) < 0.05) {
+      pickNewDriftTarget();
+    }
+    targetGroup.lookAt(camera.position);
+  }
+
+  renderer.render(scene, camera);
+});
+
+// Expose a few internals for verification/testing purposes.
+window.__vrDebug = {
+  getPhase: function () { return phase; },
+  getScore: function () { return score; },
+  getIdx: function () { return idx; },
+  getCurrentSide: function () { return currentSide; },
+  getTargetVisible: function () { return targetGroup.visible; },
+  getTargetWorldPos: function () { var v = new THREE.Vector3(); targetGroup.getWorldPosition(v); return { x: v.x, y: v.y, z: v.z }; },
+  getButtonWorldPos: function (dir) { var v = new THREE.Vector3(); buttonMeshes[dir].getWorldPosition(v); return { x: v.x, y: v.y, z: v.z }; },
+  clickButton: function (dir) { handleChoice(dir); },
+  forceEnd: function () { endDrill(); },
+  setCameraRotation: function (y, x) { lookYaw = y; lookPitch = x; },
+  getTargetScreenPos: function () {
+    var v = new THREE.Vector3();
+    targetGroup.getWorldPosition(v);
+    var projected = v.clone().project(camera);
+    return {
+      screenX: (projected.x * 0.5 + 0.5) * window.innerWidth,
+      screenY: (-projected.y * 0.5 + 0.5) * window.innerHeight,
+      behindCamera: projected.z > 1
+    };
+  },
+  diagnose: function () {
+    var v = new THREE.Vector3();
+    targetGroup.getWorldPosition(v);
+    return {
+      groupVisible: targetGroup.visible,
+      ballVisible: ballMesh.visible,
+      ballInScene: scene.children.indexOf(targetGroup) !== -1,
+      ballLocalPos: { x: ballMesh.position.x, y: ballMesh.position.y, z: ballMesh.position.z },
+      groupWorldPos: { x: v.x, y: v.y, z: v.z },
+      cameraPos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      cameraInScene: scene.children.indexOf(camera) !== -1,
+      ballMaterialColor: '#' + ballMesh.material.color.getHexString(),
+      sceneChildrenCount: scene.children.length,
+      rendererSize: { w: renderer.domElement.width, h: renderer.domElement.height }
+    };
+  },
+  swapToBasicMaterial: function () {
+    ballMesh.material = new THREE.MeshBasicMaterial({ color: 0xff8c00 });
+  },
+  addGiantTestSphere: function () {
+    var testSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    testSphere.position.set(0, 1.6, -2);
+    scene.add(testSphere);
+  },
+  diagnose2: function () {
+    return {
+      groupRotation: { x: targetGroup.rotation.x, y: targetGroup.rotation.y, z: targetGroup.rotation.z },
+      groupScale: { x: targetGroup.scale.x, y: targetGroup.scale.y, z: targetGroup.scale.z },
+      ballGeometryRadius: ballMesh.geometry.parameters.radius,
+      ballMaterialType: ballMesh.material.type,
+      ballMaterialOpacity: ballMesh.material.opacity,
+      ballMaterialTransparent: ballMesh.material.transparent,
+      ballFrustumCulled: ballMesh.frustumCulled,
+      groupFrustumCulled: targetGroup.frustumCulled,
+      ballMatrixAutoUpdate: ballMesh.matrixAutoUpdate,
+      groupMatrixAutoUpdate: targetGroup.matrixAutoUpdate
+    };
+  },
+  disableFrustumCulling: function () {
+    ballMesh.frustumCulled = false;
+  }
+};
+</script>
+</body>
+</html>
