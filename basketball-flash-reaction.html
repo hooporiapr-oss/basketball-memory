@@ -70,6 +70,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 @media(max-width:768px){.intro-fs{display:none}}
 .best-line{margin-top:18px;font-size:.85rem;color:#9fb3c8}
 .best-line b{color:#7c3aed}
+.bpm-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:440px;margin-bottom:18px}
+.bpm-btn{height:56px;border:2px solid rgba(124,58,237,.4);background:rgba(124,58,237,.08);border-radius:12px;color:#fff;font-size:1rem;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.bpm-btn small{font-size:.55rem;color:#9fb3c8;font-weight:700}
+.bpm-btn.active{border-color:#7c3aed;background:rgba(124,58,237,.22);color:#a78bfa;box-shadow:0 0 16px rgba(124,58,237,.4)}
+.bpm-btn.active small{color:#c9b8ff}
 
 #screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a0818 0%,#000 70%);text-align:center;padding:20px}
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
@@ -124,7 +129,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Reaction Velocity · Flash &amp; Recall</div>
-  <div class="rule-t"><b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at 120 BPM — carrying an arrow. Then it's gone, screen goes black. Read it, remember it, and tap the matching direction whenever you're ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you're looking straight at it.</div>
+  <div class="bpm-row">
+    <button class="bpm-btn active" data-bpm="120">120 BPM<small>500 ms flash</small></button>
+    <button class="bpm-btn" data-bpm="180">180 BPM<small>333 ms flash</small></button>
+    <button class="bpm-btn" data-bpm="240">240 BPM<small>250 ms flash</small></button>
+  </div>
+  <div class="rule-t" id="ruleText"><b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at 120 BPM — carrying an arrow. Then it's gone, screen goes black. Read it, remember it, and tap the matching direction whenever you're ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you're looking straight at it.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
 </div>
@@ -147,11 +157,23 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 
 <script>
 var FLASH_BPM=120;
-var FLASH_MS=Math.round(60000/FLASH_BPM); // one beat at 120 BPM — how long the ball stays visible
+function getFlashMs(){return Math.round(60000/FLASH_BPM)} // one beat at the selected BPM
 var PACE_MS=600;
 var TOTAL=50;
-var BEST_KEY='rct-flashreaction-best';
-var BEST_MS_KEY='rct-flashreaction-best-ms';
+function bestKey(){return 'rct-flashreaction-best-'+FLASH_BPM}
+function bestMsKey(){return 'rct-flashreaction-best-ms-'+FLASH_BPM}
+
+var RULE_TEMPLATE='<b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at {BPM} BPM — carrying an arrow. Then it\'s gone, screen goes black. Read it, remember it, and tap the matching direction whenever you\'re ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you\'re looking straight at it.';
+
+document.querySelectorAll('.bpm-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    FLASH_BPM=parseInt(btn.dataset.bpm,10);
+    document.querySelectorAll('.bpm-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    $('ruleText').innerHTML=RULE_TEMPLATE.replace('{BPM}',FLASH_BPM);
+    loadBest();
+  });
+});
 
 function $(id){return document.getElementById(id)}
 
@@ -163,13 +185,13 @@ var stimulus=$('stimulus'),stage=$('stage');
 
 function loadBest(){
   best=0;
-  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
-  try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
+  try{best=parseInt(localStorage.getItem(bestKey())||'0',10)||0}catch(e){}
+  try{bestAvgMs=parseInt(localStorage.getItem(bestMsKey())||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
   $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' pts</b>'):'';
 }
-function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
-function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
+function saveBest(){try{localStorage.setItem(bestKey(),String(best))}catch(e){}}
+function saveBestMs(){try{localStorage.setItem(bestMsKey(),String(bestAvgMs))}catch(e){}}
 
 var fsb=$('fsBtn');
 if(fsb)fsb.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
@@ -240,7 +262,7 @@ function nextTrial(){
   // to catch it while visible," it's "you saw it, now respond."
   timers.push(setTimeout(function(){
     stimulus.classList.remove('visible');
-  },FLASH_MS));
+  },getFlashMs()));
 
   // Same protection as Choice Reaction Basketball — no per-tap deadline,
   // but 5 real seconds of total silence on one target ends the drill.
