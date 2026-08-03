@@ -197,12 +197,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-section">
     <div class="box-section-label">Last Game</div>
     <table class="box-table">
-      <thead><tr><th>PTS</th><th>FG</th><th>FG%</th><th>AVG MS</th></tr></thead>
+      <thead><tr><th>PTS</th><th>FG</th><th>FG%</th><th>AVG MS</th><th>FA</th></tr></thead>
       <tbody><tr>
         <td class="box-pts" id="boxLastPts">--</td>
         <td id="boxLastFg">--</td>
         <td id="boxLastFgPct">--</td>
         <td id="boxLastMs">--</td>
+        <td id="boxLastFa">--</td>
       </tr></tbody>
     </table>
   </div>
@@ -210,13 +211,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-section">
     <div class="box-section-label">Career</div>
     <table class="box-table">
-      <thead><tr><th>GP</th><th>PPG</th><th>FG%</th><th>HIGH</th><th>AVG MS</th></tr></thead>
+      <thead><tr><th>GP</th><th>PPG</th><th>FG%</th><th>HIGH</th><th>AVG MS</th><th>FA/G</th></tr></thead>
       <tbody><tr>
         <td id="boxGP">--</td>
         <td class="box-pts" id="boxPPG">--</td>
         <td id="boxCareerFgPct">--</td>
         <td id="boxHigh">--</td>
         <td id="boxCareerMs">--</td>
+        <td id="boxCareerFa">--</td>
       </tr></tbody>
     </table>
   </div>
@@ -303,19 +305,21 @@ function loadBoxData(){
     var raw=localStorage.getItem(BOX_KEY);
     if(raw)return JSON.parse(raw);
   }catch(e){}
-  return {gp:0,totalPts:0,totalMade:0,totalAttempts:0,totalMs:0,high:0,recent:[]};
+  return {gp:0,totalPts:0,totalMade:0,totalAttempts:0,totalMs:0,totalFa:0,high:0,recent:[]};
 }
 function saveBoxData(d){try{localStorage.setItem(BOX_KEY,JSON.stringify(d))}catch(e){}}
 
-function recordGameToBoxScore(finalScore,made,attempts,avgMs){
+function recordGameToBoxScore(finalScore,made,attempts,avgMs,fa){
   var d=loadBoxData();
+  if(typeof d.totalFa!=='number')d.totalFa=0; // safe upgrade for any box score saved before this stat existed
   d.gp++;
   d.totalPts+=finalScore;
   d.totalMade+=made;
   d.totalAttempts+=attempts;
   d.totalMs+=avgMs;
+  d.totalFa+=fa;
   if(finalScore>d.high)d.high=finalScore;
-  d.recent.unshift({pts:finalScore,made:made,attempts:attempts,ms:avgMs,date:new Date().toLocaleDateString()});
+  d.recent.unshift({pts:finalScore,made:made,attempts:attempts,ms:avgMs,fa:fa,date:new Date().toLocaleDateString()});
   if(d.recent.length>8)d.recent=d.recent.slice(0,8);
   saveBoxData(d);
   return d;
@@ -325,20 +329,23 @@ function pct(made,attempts){return attempts>0?Math.round((made/attempts)*100)+'%
 
 function renderBoxScore(lastGame){
   var d=loadBoxData();
+  if(typeof d.totalFa!=='number')d.totalFa=0;
 
   if(lastGame){
     $('boxLastPts').textContent=lastGame.pts;
     $('boxLastFg').textContent=lastGame.made+'-'+lastGame.attempts;
     $('boxLastFgPct').textContent=pct(lastGame.made,lastGame.attempts);
     $('boxLastMs').textContent=lastGame.ms>0?lastGame.ms+' ms':'--';
+    $('boxLastFa').textContent=(typeof lastGame.fa==='number')?lastGame.fa:'--';
   }else if(d.recent.length){
     var l=d.recent[0];
     $('boxLastPts').textContent=l.pts;
     $('boxLastFg').textContent=l.made+'-'+l.attempts;
     $('boxLastFgPct').textContent=pct(l.made,l.attempts);
     $('boxLastMs').textContent=l.ms>0?l.ms+' ms':'--';
+    $('boxLastFa').textContent=(typeof l.fa==='number')?l.fa:'--';
   }else{
-    $('boxLastPts').textContent='--';$('boxLastFg').textContent='--';$('boxLastFgPct').textContent='--';$('boxLastMs').textContent='--';
+    $('boxLastPts').textContent='--';$('boxLastFg').textContent='--';$('boxLastFgPct').textContent='--';$('boxLastMs').textContent='--';$('boxLastFa').textContent='--';
   }
 
   $('boxGP').textContent=d.gp;
@@ -346,13 +353,15 @@ function renderBoxScore(lastGame){
   $('boxCareerFgPct').textContent=pct(d.totalMade,d.totalAttempts);
   $('boxHigh').textContent=d.high>0?d.high:'--';
   $('boxCareerMs').textContent=d.gp>0?Math.round(d.totalMs/d.gp)+' ms':'--';
+  $('boxCareerFa').textContent=d.gp>0?(d.totalFa/d.gp).toFixed(1):'--';
 
   var listEl=$('boxRecentList');
   if(!d.recent.length){
     listEl.innerHTML='<div class="box-empty">No games played yet — play a round to start your box score.</div>';
   }else{
     listEl.innerHTML=d.recent.map(function(g){
-      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+g.ms+'ms</span></div>';
+      var faText=(typeof g.fa==='number')?(' · '+g.fa+' FA'):'';
+      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+g.ms+'ms'+faText+'</span></div>';
     }).join('');
   }
 }
@@ -616,7 +625,7 @@ function endDrill(){
   $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best: '+sessionBest+'ms · '+bpmFromMs(sessionBest)+' BPM'):'');
 
   if(completed){
-    window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT);
+    window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,falseAlarms);
   }
 
   $('screen-end').style.display='flex';
