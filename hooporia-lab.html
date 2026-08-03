@@ -61,6 +61,35 @@ h1 span{color:#f37418}
   margin:14px 0 18px;
   box-shadow:0 0 40px rgba(243,116,24,.25);
 }
+.reveal-btn{
+  display:block;
+  width:100%;
+  max-width:440px;
+  margin:6px auto 24px;
+  padding:20px 24px;
+  border:none;
+  border-radius:20px;
+  background:linear-gradient(135deg,#f37418,#ff9b50);
+  color:#1a0900;
+  font-size:1.1rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+  box-shadow:0 0 40px rgba(243,116,24,.6);
+  animation:revealPulse 2s ease-in-out infinite;
+}
+@keyframes revealPulse{0%,100%{box-shadow:0 0 40px rgba(243,116,24,.6)}50%{box-shadow:0 0 70px rgba(243,116,24,.95)}}
+.reveal-btn:active{transform:scale(.98)}
+.reveal-btn.hidden{display:none}
+
+#cardsContainer{
+  transition:opacity .3s;
+}
+#cardsContainer.cardsHidden{
+  display:none;
+}
+
 .subtitle{
   font-size:1.25rem;
   font-weight:700;
@@ -163,12 +192,14 @@ footer{
 <body>
 <div class="strobeBall" id="strobeBall"></div>
 <button id="soundToggle" aria-label="Toggle sound" title="Toggle beat sound">🔊</button>
-<div id="tapToStart">Tap anywhere to start the beat</div>
 
 <div id="stage">
   <div id="panel">
     <h1>Basketball <span>Hooporia</span></h1>
     <img class="readyBanner" src="ready.png" alt="Are you ready? The game awaits — rise to the challenge">
+    <button id="revealBtn" class="reveal-btn">▶ Click Here To Select Your Training Mode</button>
+
+    <div id="cardsContainer" class="cardsHidden">
     <div class="subtitle">Choose a training mode</div>
 
     <div class="featuredRow">
@@ -210,6 +241,7 @@ footer{
         <span class="tag">Spot which cell changed between two patterns</span>
       </a>
     </div>
+    </div>
 
     <footer>Gostar Digital LLC</footer>
   </div>
@@ -220,7 +252,8 @@ var BPM=100;
 var BEAT_MS=Math.round(60000/BPM);
 var ball=document.getElementById('strobeBall');
 var soundBtn=document.getElementById('soundToggle');
-var tapHint=document.getElementById('tapToStart');
+var revealBtn=document.getElementById('revealBtn');
+var cardsContainer=document.getElementById('cardsContainer');
 var muted=false;
 var started=false;
 var beatTimer=null;
@@ -289,20 +322,24 @@ function beatTick(){
 function startBeat(){
   if(started)return;
   started=true;
-  tapHint.classList.add('hidden');
   beatTick();
   beatTimer=setInterval(beatTick,BEAT_MS);
 }
 
-document.addEventListener('click',startBeat,{once:true});
-document.addEventListener('touchstart',startBeat,{once:true});
+// One deliberate action does both things at once — the cards appear
+// and the beat starts together, rather than the beat starting on any
+// random click before the player has actually chosen to begin.
+revealBtn.addEventListener('click',function(){
+  cardsContainer.classList.remove('cardsHidden');
+  revealBtn.classList.add('hidden');
+  startBeat();
+});
 
 soundBtn.addEventListener('click',function(e){
   e.stopPropagation();
   muted=!muted;
   soundBtn.textContent=muted?'🔇':'🔊';
   soundBtn.style.opacity=muted?'.55':'1';
-  if(!started)startBeat();
 });
 })();
 </script>
