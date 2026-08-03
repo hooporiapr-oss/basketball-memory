@@ -32,30 +32,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 }
 #stimulus.visible{transform:translate(-50%,-50%) scale(1)}
 
-/* Basketball texture: warm orange sphere shading, plus the classic
-   black seam lines (one vertical, two curved "smile" panels) laid over
-   it as a separate SVG layer so the arrow glyph on top stays crisp and
-   readable regardless of what the seams are doing under it. */
-#stimulus.ball-basketball{
+/* Always a basketball now — the Go/No-Go signal lives in the arrow's
+   color instead of the ball itself, since a different ball was too
+   obvious a tell. Warm orange sphere shading, plus the classic black
+   seam lines laid over it as a separate SVG layer so the arrow glyph
+   on top stays crisp regardless of what the seams are doing under it. */
+#stimulus{
   background:
     url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22%23231005%22%20stroke-width%3D%223.4%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'),
     radial-gradient(circle at 35% 32%,#ffb35c,#ff8c00 55%,#d9660a 85%);
   background-size:100% 100%,100% 100%;
   box-shadow:0 0 40px rgba(255,140,0,.85),0 0 80px rgba(255,140,0,.45);
 }
-
-/* Soccer ball texture: white/cream base with a black pentagon pattern
-   — deliberately the strongest possible visual contrast against the
-   orange basketball, since telling these apart at a glance, even while
-   both are wandering, is the entire point of the No-Go signal. */
-#stimulus.ball-soccer{
-  background:
-    url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22s%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23s%29%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23f2f0e8%22/%3E%3Cg%20fill%3D%22%23181818%22%3E%3Cpolygon%20points%3D%2250%2C36%2062%2C45%2057%2C60%2043%2C60%2038%2C45%22/%3E%3Cpolygon%20points%3D%2250%2C6%2063%2C15%2059%2C30%2041%2C30%2037%2C15%22/%3E%3Cpolygon%20points%3D%2210%2C42%2024%2C36%2033%2C48%2024%2C62%2010%2C58%22/%3E%3Cpolygon%20points%3D%2290%2C42%2076%2C36%2067%2C48%2076%2C62%2090%2C58%22/%3E%3Cpolygon%20points%3D%2233%2C88%2044%2C74%2056%2C74%2067%2C88%2050%2C98%22/%3E%3C/g%3E%3Cg%20stroke%3D%22%23303030%22%20stroke-width%3D%221.6%22%20fill%3D%22none%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%2236%22%20x2%3D%2250%22%20y2%3D%226%22/%3E%3Cline%20x1%3D%2238%22%20y1%3D%2245%22%20x2%3D%2224%22%20y2%3D%2236%22/%3E%3Cline%20x1%3D%2262%22%20y1%3D%2245%22%20x2%3D%2276%22%20y2%3D%2236%22/%3E%3Cline%20x1%3D%2243%22%20y1%3D%2260%22%20x2%3D%2244%22%20y2%3D%2274%22/%3E%3Cline%20x1%3D%2257%22%20y1%3D%2260%22%20x2%3D%2256%22%20y2%3D%2274%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'),
-    radial-gradient(circle at 35% 32%,#ffffff,#e8e5dc 55%,#c9c5b8 85%);
-  background-size:100% 100%,100% 100%;
-  box-shadow:0 0 40px rgba(230,230,220,.7),0 0 80px rgba(230,230,220,.35);
-}
-#stimulus.ball-soccer{color:#181818;text-shadow:0 2px 6px rgba(255,255,255,.5),0 0 4px rgba(255,255,255,.4)}
 
 .ripple{position:fixed;border-radius:50%;border:3px solid #7c3aed;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:14;animation:rippleOut .5s ease-out forwards}
 @keyframes rippleOut{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
@@ -188,7 +176,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">GO <span>/ NO-GO</span> BASKETBALL</div>
   <div class="vrr-sub">Reaction Velocity · Choice + Control</div>
-  <div class="rule-t" id="ruleText"><b>50 basketballs.</b> A ball wanders the screen carrying an arrow. Most of the time it's the <b>basketball</b> — read the arrow and tap the matching direction, same as always. Every so often, rarely and at random, a <b>soccer ball</b> shows up instead, also carrying an arrow. Don't tap for that one — just let it pass. Tapping during a soccer ball costs you 2 points.</div>
+  <div class="rule-t" id="ruleText"><b>50 basketballs.</b> A basketball wanders the screen carrying an arrow. When the arrow is <b>white</b>, read it and tap the matching direction, same as always. Every so often, rarely and at random, the arrow shows up in some <b>other color</b> instead — don't tap for that one, just let it pass. Tapping on a non-white arrow costs you 2 points.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
   <button class="box-open-btn" id="openBoxBtn">📊 THE BOX SCORE</button>
@@ -253,17 +241,23 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 
 <script>
 var PACE_MS=600; // one beat at 100 BPM between one choice resolving and the next stimulus
-var TOTAL=50; // 50 BASKETBALLS specifically — soccer ball (No-Go) trials don't count toward this
+var TOTAL=50; // 50 white-arrow (Go) basketballs specifically — non-white (No-Go) trials don't count toward this
 var BEST_KEY='rct-gonogo-best';
 var BEST_MS_KEY='rct-gonogo-best-ms';
-var NOGO_CHANCE=0.15; // rare, random chance per trial of a No-Go (soccer ball) instead of a basketball
+var NOGO_CHANCE=0.15; // rare, random chance per trial of a non-white (No-Go) arrow
 
 function $(id){return document.getElementById(id)}
 
 var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0;
 var falseAlarms=0;
-var timers=[],tapLocked=false,shownAt=0,currentSide=null,currentBallType='basketball';
+var timers=[],tapLocked=false,shownAt=0,currentSide=null,currentArrowColor='white';
+// Multiple possible No-Go colors, not just one — a single fixed "wrong"
+// color would quickly become its own learnable pattern (just watch for
+// red). Randomizing among several means the actual signal to notice is
+// genuinely "is this white or not," not "is this the one specific
+// other color."
+var NOGO_COLORS=['#FF3B3B','#FFD700','#00E5FF','#7CFC00','#FF6EC7'];
 var sessionBest=0, playersThisSession=0;
 var stimulus=$('stimulus'),stage=$('stage');
 
@@ -416,12 +410,16 @@ var noResponseTimer=null;
 function nextTrial(){
   if(phase!=='running')return;
 
-  // Rare, random No-Go trial — a soccer ball instead of the basketball.
-  // Deliberately not on any fixed schedule (not "every Nth"), so there's
-  // no pattern to learn — it's a genuine, unpredictable check on
-  // whether the reflex to tap can be held back.
-  currentBallType=(Math.random()<NOGO_CHANCE)?'soccer':'basketball';
-  stimulus.className='ball-'+currentBallType;
+  // Rare, random No-Go trial — the basketball is always a basketball
+  // now; the signal lives in the arrow's color instead. Deliberately
+  // not on any fixed schedule (not "every Nth"), so there's no pattern
+  // to learn — it's a genuine, unpredictable check on whether the
+  // reflex to tap can be held back. When it is a No-Go, the color is
+  // picked from several options, not one fixed "wrong" color, so the
+  // real signal to notice is "is this white," not "watch for red."
+  var isNoGo=Math.random()<NOGO_CHANCE;
+  currentArrowColor=isNoGo?NOGO_COLORS[Math.floor(Math.random()*NOGO_COLORS.length)]:'white';
+  stimulus.style.color=currentArrowColor;
 
   currentSide=DIRS[Math.floor(Math.random()*DIRS.length)];
   stimulus.textContent=ARROWS[currentSide];
@@ -433,8 +431,8 @@ function nextTrial(){
 
   // The ball wanders continuously while it waits — direction (the
   // arrow) is what matters, not where it happens to be standing. This
-  // is identical for both ball types, since telling them apart has to
-  // happen while both are moving, not just when they're still.
+  // is identical regardless of arrow color, since telling Go from
+  // No-Go has to happen while the ball is moving, not just when still.
   if(wanderTimer)clearInterval(wanderTimer);
   wanderTimer=setInterval(function(){
     if(!stimulus.classList.contains('visible'))return;
@@ -443,7 +441,7 @@ function nextTrial(){
     stimulus.style.top=p.y+'px';
   },550);
 
-  if(currentBallType==='basketball'){
+  if(!isNoGo){
     // Same as Choice Reaction Basketball — no per-tap deadline, but 5
     // real seconds of total silence on one target ends the drill.
     stopNoResponseTimer();
@@ -477,7 +475,7 @@ function handleNoResponse(){
 function handleNoGoHeld(){
   if(phase!=='running')return;
   if(!stimulus.classList.contains('visible'))return;
-  if(currentBallType!=='soccer')return;
+  if(currentArrowColor==='white')return;
   stopWander();
   stimulus.classList.remove('visible');
   msg('✓ HELD BACK','held');
@@ -511,17 +509,17 @@ function handleChoice(side){
   var rx=dotRect.left+dotRect.width/2, ry=dotRect.top+dotRect.height/2;
   stimulus.classList.remove('visible');
 
-  if(currentBallType==='soccer'){
-    // False alarm — tapped on a No-Go. This is the impulse-control
-    // failure the whole mode is testing for. Doesn't count toward the
-    // 50 basketballs either way, but it does cost real points, same
-    // flat scale as everything else here (-2, mirroring the +2 for a
-    // made basketball), floored at 0 so the scoreboard never goes
-    // negative.
+  if(currentArrowColor!=='white'){
+    // False alarm — tapped on a No-Go (non-white) arrow. This is the
+    // impulse-control failure the whole mode is testing for. Doesn't
+    // count toward the 50 basketballs either way, but it does cost
+    // real points, same flat scale as everything else here (-2,
+    // mirroring the +2 for a made basketball), floored at 0 so the
+    // scoreboard never goes negative.
     falseAlarms++;
     score=Math.max(0,score-2);
     flash('rgba(255,20,147,.28)');
-    msg('✗ FALSE ALARM — SOCCER BALL! (-2)','wrong');
+    msg('✗ FALSE ALARM — NOT WHITE! (-2)','wrong');
     $('hScore').textContent=score;
     timers.push(setTimeout(function(){
       if(phase==='running')msg('','go');
