@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+if (sessionStorage.getItem('hoop-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>FLASH REACTION | Reaction Velocity</title>
@@ -70,13 +75,25 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 @media(max-width:768px){.intro-fs{display:none}}
 .best-line{margin-top:18px;font-size:.85rem;color:#9fb3c8}
 .best-line b{color:#7c3aed}
-.bpm-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:440px;margin-bottom:18px}
-.bpm-btn{height:56px;border:2px solid rgba(124,58,237,.4);background:rgba(124,58,237,.08);border-radius:12px;color:#fff;font-size:1rem;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-.bpm-btn small{font-size:.55rem;color:#9fb3c8;font-weight:700}
-.bpm-btn.active{border-color:#7c3aed;background:rgba(124,58,237,.22);color:#a78bfa;box-shadow:0 0 16px rgba(124,58,237,.4)}
-.bpm-btn.active small{color:#c9b8ff}
 
 #screen-end{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a0818 0%,#000 70%);text-align:center;padding:20px}
+
+#screen-box{position:fixed;inset:0;z-index:58;display:none;flex-direction:column;align-items:center;background:radial-gradient(ellipse at center,#0a0818 0%,#000 70%);padding:70px 16px 24px;overflow-y:auto}
+.box-title{font-size:1.7rem;font-weight:900;font-style:italic;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 0 40px rgba(255,140,0,.8);margin-bottom:2px}
+.box-title span{color:#ff8c00}
+.box-sub{font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;color:#7c3aed;margin-bottom:22px}
+.box-section{width:100%;max-width:440px;margin-bottom:24px}
+.box-section-label{font-size:.65rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#ffd35a;margin-bottom:8px;text-align:left;padding-left:4px}
+.box-table{width:100%;border-collapse:collapse;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.3);border-radius:12px;overflow:hidden}
+.box-table th{background:rgba(124,58,237,.18);color:#a78bfa;font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:8px 6px;text-align:center;border-bottom:1px solid rgba(124,58,237,.3)}
+.box-table td{padding:12px 6px;text-align:center;font-weight:900;font-size:1.1rem;color:#fff}
+.box-table .box-pts{color:#ff8c00;font-size:1.4rem}
+.box-empty{color:#7fa8c0;font-size:.85rem;padding:24px 8px;font-style:italic}
+.box-back-btn{width:100%;max-width:440px;height:56px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(124,58,237,.6);margin-top:6px}
+.box-recent-row{font-size:.75rem;color:#9fb3c8;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;padding:8px 10px}
+.box-recent-row:last-child{border-bottom:none}
+.box-recent-row b{color:#ffd35a}
+.box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(255,140,0,.5);background:rgba(255,140,0,.1);border-radius:14px;color:#ff8c00;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
@@ -119,24 +136,60 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 </div>
 
 <div id="controls">
-  <a class="ctrl-btn" href="basketball-flash-reaction.html">← Exit</a>
+  <a class="ctrl-btn" href="hooporia-lab.html">← Exit</a>
   <button class="ctrl-btn" id="fsBtnGame">⛶ Full Court</button>
 </div>
 
 <!-- INTRO -->
 <div id="screen-intro">
-  <a class="intro-back" href="/index.html">← Exit</a>
+  <a class="intro-back" href="hooporia-lab.html">← Exit</a>
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Reaction Velocity · Flash &amp; Recall</div>
-  <div class="bpm-row">
-    <button class="bpm-btn active" data-bpm="120">120 BPM<small>500 ms flash</small></button>
-    <button class="bpm-btn" data-bpm="180">180 BPM<small>333 ms flash</small></button>
-    <button class="bpm-btn" data-bpm="240">240 BPM<small>250 ms flash</small></button>
-  </div>
-  <div class="rule-t" id="ruleText"><b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at 120 BPM — carrying an arrow. Then it's gone, screen goes black. Read it, remember it, and tap the matching direction whenever you're ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you're looking straight at it.</div>
+  <div class="rule-t"><b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at 180 BPM — carrying an arrow. Then it's gone, screen goes black. Read it, remember it, and tap the matching direction whenever you're ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you're looking straight at it.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
+  <button class="box-open-btn" id="openBoxBtn">📊 THE BOX SCORE</button>
+</div>
+
+<!-- THE BOX SCORE -->
+<div id="screen-box">
+  <div class="box-title">THE <span>BOX SCORE</span></div>
+  <div class="box-sub">Flash Reaction · Career Stats</div>
+
+  <div class="box-section">
+    <div class="box-section-label">Last Game</div>
+    <table class="box-table">
+      <thead><tr><th>PTS</th><th>FG</th><th>FG%</th><th>AVG MS</th></tr></thead>
+      <tbody><tr>
+        <td class="box-pts" id="boxLastPts">--</td>
+        <td id="boxLastFg">--</td>
+        <td id="boxLastFgPct">--</td>
+        <td id="boxLastMs">--</td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  <div class="box-section">
+    <div class="box-section-label">Career</div>
+    <table class="box-table">
+      <thead><tr><th>GP</th><th>PPG</th><th>FG%</th><th>HIGH</th><th>AVG MS</th></tr></thead>
+      <tbody><tr>
+        <td id="boxGP">--</td>
+        <td class="box-pts" id="boxPPG">--</td>
+        <td id="boxCareerFgPct">--</td>
+        <td id="boxHigh">--</td>
+        <td id="boxCareerMs">--</td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  <div class="box-section">
+    <div class="box-section-label">Recent Games</div>
+    <div class="box-table" id="boxRecentList" style="border-radius:12px"></div>
+  </div>
+
+  <button class="box-back-btn" id="closeBoxBtn">← Back</button>
 </div>
 
 <!-- COUNTDOWN -->
@@ -151,29 +204,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <h2 id="endHead">Drill Complete!</h2>
   <div id="endSub">Great choices. Next player, beat this number!</div>
   <button class="next-player-btn" id="nextPlayerBtn">▶ Next Player</button>
+  <button class="box-open-btn" id="openBoxBtnEnd">📊 THE BOX SCORE</button>
   <div class="session-line" id="sessionLine"></div>
-  <a class="intro-back" href="basketball-flash-reaction.html" style="position:static;margin-top:22px;display:inline-block">← Exit</a>
+  <a class="intro-back" href="hooporia-lab.html" style="position:static;margin-top:22px;display:inline-block">← Exit</a>
 </div>
 
 <script>
-var FLASH_BPM=120;
-function getFlashMs(){return Math.round(60000/FLASH_BPM)} // one beat at the selected BPM
+var FLASH_BPM=180; // settled on through real testing — the one speed that works
+function getFlashMs(){return Math.round(60000/FLASH_BPM)}
 var PACE_MS=600;
 var TOTAL=50;
-function bestKey(){return 'rct-flashreaction-best-'+FLASH_BPM}
-function bestMsKey(){return 'rct-flashreaction-best-ms-'+FLASH_BPM}
-
-var RULE_TEMPLATE='<b>50 rounds.</b> A basketball flashes once, at a new spot each time — no wandering, one beat at {BPM} BPM — carrying an arrow. Then it\'s gone, screen goes black. Read it, remember it, and tap the matching direction whenever you\'re ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you\'re looking straight at it.';
-
-document.querySelectorAll('.bpm-btn').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    FLASH_BPM=parseInt(btn.dataset.bpm,10);
-    document.querySelectorAll('.bpm-btn').forEach(function(b){b.classList.remove('active')});
-    btn.classList.add('active');
-    $('ruleText').innerHTML=RULE_TEMPLATE.replace('{BPM}',FLASH_BPM);
-    loadBest();
-  });
-});
+var BEST_KEY='rct-flashreaction-best';
+var BEST_MS_KEY='rct-flashreaction-best-ms';
 
 function $(id){return document.getElementById(id)}
 
@@ -185,13 +227,94 @@ var stimulus=$('stimulus'),stage=$('stage');
 
 function loadBest(){
   best=0;
-  try{best=parseInt(localStorage.getItem(bestKey())||'0',10)||0}catch(e){}
-  try{bestAvgMs=parseInt(localStorage.getItem(bestMsKey())||'0',10)||0}catch(e){bestAvgMs=0}
+  try{best=parseInt(localStorage.getItem(BEST_KEY)||'0',10)||0}catch(e){}
+  try{bestAvgMs=parseInt(localStorage.getItem(BEST_MS_KEY)||'0',10)||0}catch(e){bestAvgMs=0}
   $('hBest').textContent=best;
   $('bestLine').innerHTML=best>0?('Your best: <b>'+best+' pts</b>'):'';
 }
-function saveBest(){try{localStorage.setItem(bestKey(),String(best))}catch(e){}}
-function saveBestMs(){try{localStorage.setItem(bestMsKey(),String(bestAvgMs))}catch(e){}}
+function saveBest(){try{localStorage.setItem(BEST_KEY,String(best))}catch(e){}}
+function saveBestMs(){try{localStorage.setItem(BEST_MS_KEY,String(bestAvgMs))}catch(e){}}
+
+// THE BOX SCORE — same personal, on-device stat sheet as the other
+// reaction games, kept under its own separate key so this game's
+// career line never blends with Choice Reaction's or Go/No-Go's.
+var BOX_KEY='rct-flashreaction-boxscore';
+function loadBoxData(){
+  try{
+    var raw=localStorage.getItem(BOX_KEY);
+    if(raw)return JSON.parse(raw);
+  }catch(e){}
+  return {gp:0,totalPts:0,totalMade:0,totalAttempts:0,totalMs:0,high:0,recent:[]};
+}
+function saveBoxData(d){try{localStorage.setItem(BOX_KEY,JSON.stringify(d))}catch(e){}}
+
+function recordGameToBoxScore(finalScore,made,attempts,avgMs){
+  var d=loadBoxData();
+  d.gp++;
+  d.totalPts+=finalScore;
+  d.totalMade+=made;
+  d.totalAttempts+=attempts;
+  d.totalMs+=avgMs;
+  if(finalScore>d.high)d.high=finalScore;
+  d.recent.unshift({pts:finalScore,made:made,attempts:attempts,ms:avgMs,date:new Date().toLocaleDateString()});
+  if(d.recent.length>8)d.recent=d.recent.slice(0,8);
+  saveBoxData(d);
+  return d;
+}
+
+function pct(made,attempts){return attempts>0?Math.round((made/attempts)*100)+'%':'--'}
+
+function renderBoxScore(lastGame){
+  var d=loadBoxData();
+
+  if(lastGame){
+    $('boxLastPts').textContent=lastGame.pts;
+    $('boxLastFg').textContent=lastGame.made+'-'+lastGame.attempts;
+    $('boxLastFgPct').textContent=pct(lastGame.made,lastGame.attempts);
+    $('boxLastMs').textContent=lastGame.ms>0?lastGame.ms+' ms':'--';
+  }else if(d.recent.length){
+    var l=d.recent[0];
+    $('boxLastPts').textContent=l.pts;
+    $('boxLastFg').textContent=l.made+'-'+l.attempts;
+    $('boxLastFgPct').textContent=pct(l.made,l.attempts);
+    $('boxLastMs').textContent=l.ms>0?l.ms+' ms':'--';
+  }else{
+    $('boxLastPts').textContent='--';$('boxLastFg').textContent='--';$('boxLastFgPct').textContent='--';$('boxLastMs').textContent='--';
+  }
+
+  $('boxGP').textContent=d.gp;
+  $('boxPPG').textContent=d.gp>0?(d.totalPts/d.gp).toFixed(1):'--';
+  $('boxCareerFgPct').textContent=pct(d.totalMade,d.totalAttempts);
+  $('boxHigh').textContent=d.high>0?d.high:'--';
+  $('boxCareerMs').textContent=d.gp>0?Math.round(d.totalMs/d.gp)+' ms':'--';
+
+  var listEl=$('boxRecentList');
+  if(!d.recent.length){
+    listEl.innerHTML='<div class="box-empty">No games played yet — play a round to start your box score.</div>';
+  }else{
+    listEl.innerHTML=d.recent.map(function(g){
+      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+g.ms+'ms</span></div>';
+    }).join('');
+  }
+}
+
+var boxReturnScreen='screen-intro';
+$('openBoxBtn').onclick=function(){
+  boxReturnScreen='screen-intro';
+  renderBoxScore(window.__lastGameBox?window.__lastGameBox.recent[0]:null);
+  $('screen-intro').style.display='none';
+  $('screen-box').style.display='flex';
+};
+$('openBoxBtnEnd').onclick=function(){
+  boxReturnScreen='screen-end';
+  renderBoxScore(window.__lastGameBox?window.__lastGameBox.recent[0]:null);
+  $('screen-end').style.display='none';
+  $('screen-box').style.display='flex';
+};
+$('closeBoxBtn').onclick=function(){
+  $('screen-box').style.display='none';
+  document.getElementById(boxReturnScreen).style.display='flex';
+};
 
 var fsb=$('fsBtn');
 if(fsb)fsb.onclick=async function(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}};
@@ -364,6 +487,10 @@ function endDrill(){
   }
   playersThisSession++;
   $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best: '+sessionBest+'ms · '+bpmFromMs(sessionBest)+' BPM'):'');
+
+  if(completed){
+    window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT);
+  }
 
   $('screen-end').style.display='flex';
 }
