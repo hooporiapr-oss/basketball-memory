@@ -17,11 +17,8 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 
 #msg{position:fixed;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:20;font-family:Arial,Helvetica,sans-serif;font-size:1.1rem;letter-spacing:2px;text-transform:uppercase;text-align:center;pointer-events:none;transition:opacity .2s;width:90%}
 
-/* Live scoreboard — a real, running shot-by-shot record, exactly like
-   a basketball box score fills in as the game happens. Scrolls to the
-   newest chip automatically so the latest result is always visible. */
-#scoreboard{position:fixed;top:calc(100px + env(safe-area-inset-top));left:0;right:0;z-index:15;display:flex;gap:6px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
-#scoreboard::-webkit-scrollbar{display:none}
+/* Shot chips — used on the end screen and Box Score to show the full
+   round-by-round history after the fact, not live during play. */
 .shot-chip{flex:0 0 auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;font-size:1rem;font-weight:900;color:#fff}
 .shot-chip.chip-3{background:linear-gradient(135deg,#7dffa8,#3ddc72);box-shadow:0 0 14px rgba(61,220,114,.7);color:#0a2f16}
 .shot-chip.chip-2{background:rgba(255,60,60,.18);border:1px solid rgba(255,60,60,.45);color:#ff6b6b}
@@ -44,45 +41,44 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 
 /* Stagnant, centered target — never moves. Only the arrow it carries
    changes, on the beat. */
-#court-area{position:fixed;top:9%;bottom:34%;left:0;right:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:6px 10px}
+#court-area{position:fixed;top:9%;bottom:6%;left:0;right:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:6px 10px}
 #court{position:relative;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(5,1fr);gap:4px;border:2px solid rgba(255,149,0,.4);border-radius:14px;padding:6px;background-color:#2b1810;background-image:url('data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20200%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%0A%20%20%3Crect%20width%3D%22200%22%20height%3D%22100%22%20fill%3D%22%233a1c0b%22/%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%22198%22%20height%3D%2298%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cline%20x1%3D%22100%22%20y1%3D%221%22%20x2%3D%22100%22%20y2%3D%2299%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%22100%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%2231%22%20width%3D%2238%22%20height%3D%2238%22%20fill%3D%22rgba%28255%2C107%2C0%2C.08%29%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%2239%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cpath%20d%3D%22M%201%2C10%20A%2084%2C84%200%200%2C1%2061%2C50%20A%2084%2C84%200%200%2C1%201%2C90%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.3%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Crect%20x%3D%22161%22%20y%3D%2231%22%20width%3D%2238%22%20height%3D%2238%22%20fill%3D%22rgba%28255%2C107%2C0%2C.08%29%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%22161%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cpath%20d%3D%22M%20199%2C10%20A%2084%2C84%200%200%2C0%20139%2C50%20A%2084%2C84%200%200%2C0%20199%2C90%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.3%29%22%20stroke-width%3D%221.5%22/%3E%3C/svg%3E');background-size:100% 100%;box-shadow:0 0 60px rgba(255,149,0,.25),inset 0 0 40px rgba(255,149,0,.05)}
-.cell{border-radius:6px;background:rgba(255,149,0,.05);border:2px solid rgba(255,149,0,.28);position:relative}
-.cell.lit{background:rgba(255,140,0,.28);border-color:#ff8c00;box-shadow:0 0 20px rgba(255,140,0,.85) inset,0 0 16px rgba(255,140,0,.6)}
+.cell{border-radius:6px;background:rgba(255,149,0,.05);border:2px solid rgba(255,149,0,.28);position:relative;display:flex;align-items:center;justify-content:center}
 .cell.hit{animation:cellHit .18s}
 .cell.made{animation:cellMade .18s}
 @keyframes cellMade{50%{background:rgba(61,220,114,.55);border-color:#3ddc72}}
 @keyframes cellHit{50%{background:rgba(255,140,0,.55)}}
+
+/* The target cell itself carries the whole three-point signal now —
+   no separate ring overlay. A steady green background while the
+   arrow is actually visible, then real strobing (not just a static
+   color) once it's memory-only: green strobe for the three-point
+   window, then — without any reset, just a color swap — red strobe
+   for the rest of the response window. */
+.cell.target-flash{background:#3ddc72!important;border-color:#3ddc72!important;box-shadow:0 0 20px rgba(61,220,114,.85) inset,0 0 16px rgba(61,220,114,.6)!important}
+.cell.target-strobe-green{animation:strobeGreen .3s ease-in-out infinite}
+.cell.target-strobe-red{animation:strobeRed .3s ease-in-out infinite}
+@keyframes strobeGreen{0%,100%{background:rgba(61,220,114,.18);border-color:rgba(61,220,114,.4)}50%{background:rgba(61,220,114,.75);border-color:#3ddc72;box-shadow:0 0 22px rgba(61,220,114,.8) inset}}
+@keyframes strobeRed{0%,100%{background:rgba(255,60,60,.18);border-color:rgba(255,60,60,.4)}50%{background:rgba(255,60,60,.75);border-color:#ff3c3c;box-shadow:0 0 22px rgba(255,60,60,.8) inset}}
+
+/* The four response cells live inside the court's own bottom row now
+   — the center four of its ten, three blank on each side — rather
+   than as a separate control pad below it. Which of the four carries
+   which direction still shuffles every round, exactly as before. */
+.cell.response{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.04);cursor:pointer;touch-action:manipulation}
+.cell.response:active{background:rgba(255,255,255,.18);transform:scale(.95)}
+.cell.response .gold-arrow{width:56%;height:56%}
 #stimArrow{position:fixed;pointer-events:none;transition:opacity .1s;z-index:31}
 #stimArrow.arrow-hidden{opacity:0}
-/* The three-point ring — a real, visible countdown wrapped around the
-   ACTIVE CELL itself. Full and bright the instant it flashes, then it
-   visibly depletes over the exact three-point window (FAST_MS). Once
-   it's gone, so is the window — nothing hidden, nothing found out
-   only after the fact. */
-#threeRing{position:fixed;pointer-events:none;transform:rotate(-90deg);opacity:0;transition:opacity .1s;z-index:30}
-#threeRing.on{opacity:1}
-#threeRingCircle{fill:none;stroke:#ffd23f;stroke-width:6;stroke-linecap:round;filter:drop-shadow(0 0 6px rgba(255,210,63,.9))}
 
 /* Gold arrows — a real SVG shape with a metallic gradient and drop
    shadow, rotated per direction rather than four separate flat glyphs.
    One shape, one gradient, perfectly consistent across every direction. */
 .gold-arrow{width:46%;height:46%;filter:drop-shadow(0 3px 4px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,255,255,.55));transition:transform .06s,opacity .1s}
-.choice-btn .gold-arrow{width:52%;height:52%}
 .dir-up{transform:rotate(0deg)}
 .dir-right{transform:rotate(90deg)}
 .dir-down{transform:rotate(180deg)}
 .dir-left{transform:rotate(270deg)}
-
-#choices{
-  position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:20;
-  display:grid;grid-template-columns:74px 74px 74px;grid-template-rows:64px 64px 64px;gap:8px;
-}
-.choice-btn{border:2px solid rgba(255,30,60,.4);background:rgba(255,30,60,.08);border-radius:14px;color:#fff;display:flex;align-items:center;justify-content:center;transition:all .08s}
-.choice-btn:active{background:rgba(255,30,60,.35);transform:scale(.94)}
-#slot0{grid-column:2;grid-row:1}
-#slot1{grid-column:1;grid-row:2}
-#slot2{grid-column:3;grid-row:2}
-#slot3{grid-column:2;grid-row:3}
 
 #backBtn{position:fixed;top:calc(12px + env(safe-area-inset-top));left:14px;z-index:60;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;font-size:.7rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;z-index:60}
 
@@ -168,18 +164,9 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 </div>
 
 <div id="msg" class="watch"></div>
-<div id="scoreboard"></div>
 
 <div id="court-area"><div id="court"></div></div>
-<svg id="threeRing" viewBox="0 0 100 100"><circle id="threeRingCircle" cx="50" cy="50" r="46"/></svg>
 <svg class="gold-arrow" id="stimArrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg>
-
-<div id="choices">
-  <button class="choice-btn" id="slot0"><svg class="gold-arrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg></button>
-  <button class="choice-btn" id="slot1"><svg class="gold-arrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg></button>
-  <button class="choice-btn" id="slot2"><svg class="gold-arrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg></button>
-  <button class="choice-btn" id="slot3"><svg class="gold-arrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg></button>
-</div>
 
 <!-- INTRO -->
 <div id="screen-intro">
@@ -297,16 +284,18 @@ var currentSide=null,awaitingResponse=false;
 var roundTimer=null,flashTimer=null,ringStartTimer=null;
 var stimArrow=$('stimArrow');
 var court=$('court');
-var threeRing=$('threeRing');
-var threeRingCircle=$('threeRingCircle');
-var colorTimer=null;
-var GREEN='#3ddc72',RED='#ff3c3c';
 var cells=[],currentCellIdx=-1,lastCellIdx=-1;
+var strobeTimer=null;
+// The bottom row is 10 cells wide (indices 40-49); the center four —
+// 43,44,45,46 — are the response buttons, three blank cells on each
+// side. They live inside the same court as the target now, not as a
+// separate control pad below it.
+var RESPONSE_CELLS=[43,44,45,46];
 
 // Builds the same proven 10x5 court used throughout Hooporia's other
-// memory games — 50 fixed, never-moving cells. One cell at a time
-// becomes the active target each round; the cell itself is the
-// stable, familiar marker, never a freely floating shape.
+// memory games — 50 fixed, never-moving cells. Four of them, in the
+// bottom row, are permanently the response buttons; the rest are
+// available for the target to flash on.
 function buildCourt(){
   court.innerHTML='';cells=[];
   for(var i=0;i<50;i++){
@@ -316,6 +305,19 @@ function buildCourt(){
     court.appendChild(c);
     cells.push(c);
   }
+  RESPONSE_CELLS.forEach(function(i){
+    var c=cells[i];
+    c.classList.add('response');
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','gold-arrow');
+    svg.setAttribute('viewBox','0 0 100 100');
+    svg.innerHTML='<path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/>';
+    c.appendChild(svg);
+    c.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      handleChoice(c.dataset.dir);
+    });
+  });
 }
 
 // Keeps the court at a true 2:1 ratio (matching the drawn court
@@ -343,59 +345,16 @@ function resizeCourtToFit(){
 }
 window.addEventListener('resize',resizeCourtToFit);
 
-// The ball and arrow flash for FLASH_MS, then go blank — only then
-// does the ring appear at all. It runs as ONE continuous depleting
-// arc across the entire rest of the response window (from FLASH_MS
-// out to the full RESPONSE_TIMEOUT_MS), starting green for its own
-// separate window (the real three-point line), then — without ever
-// resetting or restarting the arc — simply switching to red for
-// everything after. Green success is a real 3, red is a real 2; the
-// ring itself IS the honest three-point line, not a hidden timer.
-function startThreeRing(cellRect){
-  clearTimeout(colorTimer);
-  var size=Math.min(cellRect.width,cellRect.height)+26;
-  var r=(size/2)-6;
-  var circumference=2*Math.PI*r;
-  threeRing.style.width=size+'px';
-  threeRing.style.height=size+'px';
-  threeRing.style.left=(cellRect.left+cellRect.width/2)+'px';
-  threeRing.style.top=(cellRect.top+cellRect.height/2)+'px';
-  threeRing.style.transform='translate(-50%,-50%) rotate(-90deg)';
-  threeRingCircle.setAttribute('cx',size/2);
-  threeRingCircle.setAttribute('cy',size/2);
-  threeRingCircle.setAttribute('r',r);
-  threeRing.setAttribute('viewBox','0 0 '+size+' '+size);
-  threeRing.classList.add('on');
-  threeRingCircle.style.strokeDasharray=circumference;
-  threeRingCircle.style.stroke=GREEN;
-  threeRingCircle.style.transition='none';
-  threeRingCircle.style.strokeDashoffset='0';
-  // force reflow so the browser actually applies the reset above
-  // before the depleting transition starts, rather than collapsing
-  // the two into one silent jump straight to empty.
-  void threeRingCircle.getBoundingClientRect();
-  var totalRingMs=RESPONSE_TIMEOUT_MS-FLASH_MS;
-  var greenMs=FAST_MS-FLASH_MS;
-  threeRingCircle.style.transition='stroke-dashoffset '+totalRingMs+'ms linear';
-  threeRingCircle.style.strokeDashoffset=String(circumference);
-  colorTimer=setTimeout(function(){
-    threeRingCircle.style.stroke=RED;
-  },greenMs);
-}
-function stopThreeRing(){
-  clearTimeout(ringStartTimer);
-  clearTimeout(colorTimer);
-  threeRing.classList.remove('on');
-  threeRingCircle.style.transition='none';
-}
-
-// Picks a new active cell on the fixed 10x5 court — never the same
-// cell twice in a row, so every round is guaranteed to actually move,
-// not just usually move. The court itself never changes shape or
-// position; only which single cell is active does.
+// Picks a new active target cell — never one of the four response
+// cells, and never the same cell twice in a row, so every round is
+// guaranteed to actually move, not just usually move. The court
+// itself never changes shape or position; only which single cell is
+// the target does.
 function pickRandomCell(){
   var idx;
-  do{ idx=Math.floor(Math.random()*50); }while(idx===lastCellIdx);
+  do{
+    idx=Math.floor(Math.random()*50);
+  }while(idx===lastCellIdx||RESPONSE_CELLS.indexOf(idx)!==-1);
   lastCellIdx=idx;
   return idx;
 }
@@ -485,7 +444,6 @@ function runDrill(){
   phase='running';idx=0;correctCount=0;misses=0;noResponseCount=0;totalRT=0;rtCount=0;score=0;threes=0;shotLog=[];
   currentCellIdx=-1;lastCellIdx=-1;
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;$('hLastMs').textContent='--';
-  $('scoreboard').innerHTML='';
   nextTarget();
 }
 
@@ -504,15 +462,6 @@ function renderScoreboard(container,log){
 }
 function pushShotChip(result){
   shotLog.push(result);
-  var board=$('scoreboard');
-  if(!board)return;
-  var cls=result==='3'?'chip-3':result==='2'?'chip-2':'chip-x';
-  var label=result==='x'?'X':result;
-  var chip=document.createElement('div');
-  chip.className='shot-chip '+cls+' chip-new';
-  chip.textContent=label;
-  board.appendChild(chip);
-  board.scrollLeft=board.scrollWidth;
 }
 
 // Open-ended per round: the target waits for a real tap and scores on
@@ -538,14 +487,16 @@ function nextTarget(){
 
   // The court itself never moves — its 50 cells are fixed and stable,
   // exactly like every proven memory game on this court. Only which
-  // single cell is active changes each round. The active cell is the
-  // constant, visible target; only the arrow it's carrying briefly is
-  // the fleeting part — it flashes for FLASH_MS, then vanishes while
-  // the cell stays lit, and only then does the three-point ring begin.
-  if(currentCellIdx>=0)cells[currentCellIdx].classList.remove('lit');
+  // single cell is the target changes each round. The target cell
+  // itself carries the whole signal now: a steady green background
+  // while the arrow is actually visible, then real strobing once it's
+  // memory-only — green strobe for the three-point window, then red
+  // strobe for the rest of the response window. No separate ring.
+  clearTimeout(strobeTimer);
+  if(currentCellIdx>=0)clearCellState(cells[currentCellIdx]);
   currentCellIdx=pickRandomCell();
   var cell=cells[currentCellIdx];
-  cell.classList.add('lit');
+  cell.classList.add('target-flash');
   var rect=cell.getBoundingClientRect();
   var arrowSize=Math.min(rect.width,rect.height)*0.56;
   stimArrow.style.width=arrowSize+'px';
@@ -562,31 +513,38 @@ function nextTarget(){
   clearTimeout(flashTimer);
   flashTimer=setTimeout(function(){
     stimArrow.classList.add('arrow-hidden');
-    startThreeRing(cell.getBoundingClientRect());
+    cell.classList.remove('target-flash');
+    cell.classList.add('target-strobe-green');
+    strobeTimer=setTimeout(function(){
+      cell.classList.remove('target-strobe-green');
+      cell.classList.add('target-strobe-red');
+    },FAST_MS-FLASH_MS);
   },FLASH_MS);
 
   clearTimeout(roundTimer);
   roundTimer=setTimeout(handleTimeout,RESPONSE_TIMEOUT_MS);
 }
+function clearCellState(cell){
+  cell.classList.remove('target-flash','target-strobe-green','target-strobe-red');
+}
 
-// Re-randomizes which direction lives in which of the four fixed
-// screen positions, every single round. The physical slots never
-// move — the cross stays a cross, thumb-reachable and predictable —
-// but which arrow is IN each slot changes every time, so there's no
-// "top button = up" muscle memory to fall back on. Reading both the
-// target and the buttons is required on every single tap.
-var SLOT_IDS=['slot0','slot1','slot2','slot3'];
+// Re-randomizes which direction lives in which of the four response
+// cells, every single round. The physical cells never move — they're
+// a fixed part of the court's own bottom row — but which arrow is IN
+// each one changes every time, so there's no "third from center =
+// up" muscle memory to fall back on. Reading both the target and the
+// response cells is required on every single tap.
 function shuffleButtonLayout(){
   var shuffled=DIRS.slice();
   for(var i=shuffled.length-1;i>0;i--){
     var j=Math.floor(Math.random()*(i+1));
     var tmp=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=tmp;
   }
-  SLOT_IDS.forEach(function(slotId,i){
+  RESPONSE_CELLS.forEach(function(cellIdx,i){
     var dir=shuffled[i];
-    var btn=$(slotId);
-    btn.dataset.dir=dir;
-    var svg=btn.querySelector('svg');
+    var c=cells[cellIdx];
+    c.dataset.dir=dir;
+    var svg=c.querySelector('svg');
     svg.style.transform='rotate('+DIR_DEG[dir]+'deg)';
   });
 }
@@ -595,7 +553,8 @@ function handleTimeout(){
   if(phase!=='running'||!awaitingResponse)return;
   awaitingResponse=false;
   clearTimeout(flashTimer);
-  stopThreeRing();
+  clearTimeout(strobeTimer);
+  if(currentCellIdx>=0)clearCellState(cells[currentCellIdx]);
   // A miss — zero, same as any missed shot. Three of these across the
   // game — whether spread out or three in a row — ends the drill
   // immediately rather than letting it run on with someone who has
@@ -626,8 +585,9 @@ function handleChoice(side){
   awaitingResponse=false;
   clearTimeout(roundTimer);
   clearTimeout(flashTimer);
+  clearTimeout(strobeTimer);
   stimArrow.classList.add('arrow-hidden');
-  stopThreeRing();
+  if(currentCellIdx>=0)clearCellState(cells[currentCellIdx]);
 
   if(side===currentSide){
     var rt=performance.now()-shownAt;
@@ -657,23 +617,11 @@ function handleChoice(side){
   nextTarget();
 }
 
-// Each slot's own click handler reads whichever direction is CURRENTLY
-// assigned to it at the moment of the tap, rather than a fixed
-// direction baked into the button itself — since that assignment
-// changes every round.
-['slot0','slot1','slot2','slot3'].forEach(function(id){
-  $(id).addEventListener('pointerdown',function(e){
-    e.preventDefault();
-    handleChoice(this.dataset.dir);
-  });
-});
-
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clearTimeout(roundTimer);clearTimeout(flashTimer);
-  if(currentCellIdx>=0){cells[currentCellIdx].classList.remove('lit');currentCellIdx=-1;}
+  phase='done';clearTimeout(roundTimer);clearTimeout(flashTimer);clearTimeout(strobeTimer);
+  if(currentCellIdx>=0){clearCellState(cells[currentCellIdx]);currentCellIdx=-1;}
   stimArrow.classList.add('arrow-hidden');
-  stopThreeRing();
   // Score is the running point total — plain basketball scoring, not
   // an abstract rate. Every correct tap adds a real, familiar chunk
   // (2 or 3), every miss adds nothing. The number people see is the
