@@ -28,16 +28,16 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 #scoreboard{position:fixed;top:calc(100px + env(safe-area-inset-top));left:0;right:0;z-index:15;display:flex;gap:6px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
 #scoreboard::-webkit-scrollbar{display:none}
 .shot-chip{flex:0 0 auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;font-size:1rem;font-weight:900;color:#fff}
-.shot-chip.chip-3{background:linear-gradient(135deg,#ffd23f,#ff9b00);box-shadow:0 0 14px rgba(255,180,0,.7)}
-.shot-chip.chip-2{background:rgba(0,229,255,.18);border:1px solid rgba(0,229,255,.4);color:#00e5ff}
+.shot-chip.chip-3{background:linear-gradient(135deg,#7dffa8,#3ddc72);box-shadow:0 0 14px rgba(61,220,114,.7);color:#0a2f16}
+.shot-chip.chip-2{background:rgba(255,60,60,.18);border:1px solid rgba(255,60,60,.45);color:#ff6b6b}
 .shot-chip.chip-x{background:rgba(255,30,60,.18);border:1px solid rgba(255,30,60,.4);color:#ff6b7f}
 .shot-chip.chip-new{animation:chipPop .35s ease-out}
 @keyframes chipPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
 .shot-chip.chip-3.chip-new{animation:chipFlash3 .5s ease-out}
 @keyframes chipFlash3{
-  0%{transform:scale(.4);opacity:0;box-shadow:0 0 0 rgba(255,180,0,0)}
-  40%{transform:scale(1.4);box-shadow:0 0 30px rgba(255,180,0,1)}
-  100%{transform:scale(1);opacity:1;box-shadow:0 0 14px rgba(255,180,0,.7)}
+  0%{transform:scale(.4);opacity:0;box-shadow:0 0 0 rgba(61,220,114,0)}
+  40%{transform:scale(1.4);box-shadow:0 0 30px rgba(61,220,114,1)}
+  100%{transform:scale(1);opacity:1;box-shadow:0 0 14px rgba(61,220,114,.7)}
 }
 
 /* Same chip strip, reused read-only on the end screen and Box Score —
@@ -75,7 +75,7 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 
 /* The three-point ring — a real, visible countdown wrapped around the
    ball itself. Full and bright the instant it flashes, then it
-   visibly depletes over the exact 600ms three-point window. Once it's
+   visibly depletes over the exact three-point window (FAST_MS). Once it's
    gone, so is the window — nothing hidden, nothing found out only
    after the fact. */
 #threeRing{position:absolute;top:50%;width:142px;height:142px;pointer-events:none;transform:translate(-50%,-50%) rotate(-90deg);opacity:0;transition:opacity .1s}
@@ -85,7 +85,8 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 /* Gold arrows — a real SVG shape with a metallic gradient and drop
    shadow, rotated per direction rather than four separate flat glyphs.
    One shape, one gradient, perfectly consistent across every direction. */
-.gold-arrow{width:46%;height:46%;filter:drop-shadow(0 3px 4px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,200,60,.55));transition:transform .06s}
+.gold-arrow{width:46%;height:46%;filter:drop-shadow(0 3px 4px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,200,60,.55));transition:transform .06s,opacity .1s}
+#stimArrow.arrow-hidden{opacity:0}
 .choice-btn .gold-arrow{width:52%;height:52%}
 .dir-up{transform:rotate(0deg)}
 .dir-right{transform:rotate(90deg)}
@@ -148,8 +149,8 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 .box-table td{padding:10px 4px;text-align:center;font-weight:900;font-size:1rem;color:#fff}
 .box-table .box-pts{color:var(--red);font-size:1.25rem}
 .box-table th.col-0,.box-table td.box-zero{color:#ff6b7f}
-.box-table th.col-2,.box-table td.box-two{color:var(--cy)}
-.box-table th.col-3,.box-table td.box-three{color:#ffb400}
+.box-table th.col-2,.box-table td.box-two{color:#ff6b6b}
+.box-table th.col-3,.box-table td.box-three{color:#3ddc72}
 .box-table td.box-zero,.box-table td.box-two,.box-table td.box-three{font-weight:900;font-size:1.05rem}
 .box-empty{color:var(--muted);font-size:.8rem;padding:20px 8px;font-style:italic}
 .box-back-btn{width:100%;max-width:360px;height:50px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--red),var(--red-deep));color:#fff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:4px}
@@ -289,11 +290,15 @@ var BOX_KEY='hoop-flashreaction-boxscore';
 function $(id){return document.getElementById(id)}
 function bpmFromMs(v){return v?Math.round(60000/v):0}
 
-var FAST_MS=600; // the "three-point line" — respond within 600ms and
-// a correct tap is worth 3, same as basketball rewards a shot from
-// further out. Anything correct but slower than that is a standard
-// 2-point make. Wrong or no response is a miss: zero, same as it
-// always is on a scoreboard.
+var FAST_MS=1000; // the "three-point line" — where the green ring
+// phase ends and red begins. The ball and arrow flash for FLASH_MS
+// (500ms) and go blank; only then does the ring appear and start
+// counting down, green for its own separate 500ms, then continuing
+// its same arc in red for the rest of the response window. Respond
+// while it's green and a correct tap is worth 3, same as basketball
+// rewards a shot from further out. Respond while it's red — correct
+// but slower — is a standard 2-point make. Wrong or no response is a
+// miss: zero, same as it always is on a scoreboard.
 
 var phase='idle';
 var idx=0,best=0,correctCount=0,misses=0,noResponseCount=0,totalRT=0,rtCount=0,shownAt=0;
@@ -305,7 +310,7 @@ var score=0,threes=0,shotLog=[]; // score is a running total, exactly like point
 // on-screen scoreboard live and carrying through to the end screen.
 var lastAvgBpm=0,beatPreviewPlaying=false;
 var currentSide=null,awaitingResponse=false;
-var roundTimer=null,flashTimer=null;
+var roundTimer=null,flashTimer=null,ringStartTimer=null;
 var stimulus=$('stimulus');
 var stimArrow=$('stimArrow');
 var stage=$('stage');
@@ -313,42 +318,43 @@ var threeRing=$('threeRing');
 var threeRingCircle=$('threeRingCircle');
 var RING_CIRCUMFERENCE=2*Math.PI*65; // matches the r=65 circle in the SVG
 threeRingCircle.style.strokeDasharray=RING_CIRCUMFERENCE;
-var hotTimer=null;
+var colorTimer=null;
+var GREEN='#3ddc72',RED='#ff3c3c';
 
-// Resets the ring to a full, bright circle instantly, then starts it
-// visibly depleting over exactly FAST_MS — the real, honest three-
-// point window, not a hidden timer. The ball's own glow shifts gold
-// for the same exact duration, so there are two synced signals, not
-// one relying on the other. The ring is deliberately its own element,
-// not a child of the ball — the window stays open (and visible) for
-// the full FAST_MS even after the ball itself has already gone blank,
-// since responding during that blank stretch is still valid and
-// still eligible for a real three-pointer.
+// The ball and arrow flash for FLASH_MS, then go blank — only then
+// does the ring appear at all. It runs as ONE continuous depleting
+// arc across the entire rest of the response window (from FLASH_MS
+// out to the full RESPONSE_TIMEOUT_MS), starting green for its own
+// separate window (the real three-point line), then — without ever
+// resetting or restarting the arc — simply switching to red for
+// everything after. Green success is a real 3, red is a real 2; the
+// ring itself IS the honest three-point line, not a hidden timer.
 function startThreeRing(pos){
-  clearTimeout(hotTimer);
+  clearTimeout(colorTimer);
   threeRing.style.left=pos.x+'px';
   threeRing.style.top=pos.y+'px';
   threeRing.classList.add('on');
+  threeRingCircle.style.stroke=GREEN;
   threeRingCircle.style.transition='none';
   threeRingCircle.style.strokeDashoffset='0';
-  stimulus.classList.add('stim-hot');
   // force reflow so the browser actually applies the reset above
   // before the depleting transition starts, rather than collapsing
   // the two into one silent jump straight to empty.
   void threeRingCircle.getBoundingClientRect();
-  threeRingCircle.style.transition='stroke-dashoffset '+FAST_MS+'ms linear';
+  var totalRingMs=RESPONSE_TIMEOUT_MS-FLASH_MS;
+  var greenMs=FAST_MS-FLASH_MS;
+  threeRingCircle.style.transition='stroke-dashoffset '+totalRingMs+'ms linear';
   threeRingCircle.style.strokeDashoffset=String(RING_CIRCUMFERENCE);
-  hotTimer=setTimeout(function(){
-    stimulus.classList.remove('stim-hot');
-    threeRing.classList.remove('on');
-  },FAST_MS);
+  colorTimer=setTimeout(function(){
+    threeRingCircle.style.stroke=RED;
+  },greenMs);
 }
 function stopThreeRing(){
-  clearTimeout(hotTimer);
+  clearTimeout(ringStartTimer);
+  clearTimeout(colorTimer);
   threeRing.classList.remove('on');
   threeRingCircle.style.transition='none';
   threeRingCircle.style.strokeDashoffset=String(RING_CIRCUMFERENCE);
-  stimulus.classList.remove('stim-hot');
 }
 
 // The ball appears at a genuinely new random spot within the stage
@@ -498,27 +504,27 @@ function nextTarget(){
   var pool=DIRS.filter(function(d){return d!==currentSide});
   currentSide=pool[Math.floor(Math.random()*pool.length)];
   stimArrow.style.transform='rotate('+DIR_DEG[currentSide]+'deg)';
+  stimArrow.classList.remove('arrow-hidden');
   var pos=randomStagePos();
   stimulus.style.left=pos.x+'px';
   stimulus.style.top=pos.y+'px';
+  // The ball itself never disappears once the drill has started — it
+  // just moves to a new spot each round and stays put as a constant,
+  // visible target. Only the arrow it's carrying is the fleeting part:
+  // it flashes for FLASH_MS, then vanishes while the ball remains,
+  // and only then does the three-point ring begin. Reading the arrow
+  // in that brief window, then acting from memory while the ring
+  // counts down, is the actual test.
   stimulus.classList.add('visible');
   shownAt=performance.now();
-  startThreeRing(pos);
   $('hLeft').textContent=Math.max(0,TOTAL-idx+1);
   shuffleButtonLayout();
 
-  // The ball stays visible for exactly the same window the three-point
-  // ring is counting down — the two disappear together, as one honest
-  // signal, rather than the ball vanishing early and leaving the ring
-  // to finish counting down against a blank screen. Tapping is valid
-  // the whole time, both while it's visible and through any blank
-  // period after — this tests reading-and-recalling under real time
-  // pressure, not just reacting to something already sitting in front
-  // of you.
   clearTimeout(flashTimer);
   flashTimer=setTimeout(function(){
-    stimulus.classList.remove('visible');
-  },FAST_MS);
+    stimArrow.classList.add('arrow-hidden');
+    startThreeRing(pos);
+  },FLASH_MS);
 
   clearTimeout(roundTimer);
   roundTimer=setTimeout(handleTimeout,RESPONSE_TIMEOUT_MS);
@@ -550,7 +556,6 @@ function handleTimeout(){
   if(phase!=='running'||!awaitingResponse)return;
   awaitingResponse=false;
   clearTimeout(flashTimer);
-  stimulus.classList.remove('visible');
   stopThreeRing();
   // A miss — zero, same as any missed shot. Three of these across the
   // game — whether spread out or three in a row — ends the drill
@@ -580,7 +585,7 @@ function handleChoice(side){
   awaitingResponse=false;
   clearTimeout(roundTimer);
   clearTimeout(flashTimer);
-  stimulus.classList.remove('visible');
+  stimArrow.classList.add('arrow-hidden');
   stopThreeRing();
 
   if(side===currentSide){
