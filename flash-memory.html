@@ -237,7 +237,7 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
   <div class="final-misses" id="endMisses"></div>
   <div class="scoreboard-static" id="endScoreboard"></div>
   <div class="bpm-avg-label" id="bpmAvgLabel" style="display:none"></div>
-  <button class="hear-bpm-btn" id="hearBpmBtn" style="display:none"><span class="beat-dot-ind" id="beatDotInd"></span> Hear Your Hooporia</button>
+  <button class="hear-bpm-btn" id="hearBpmBtn" style="display:none"><span class="beat-dot-ind" id="beatDotInd"></span> Hear Your Flash Memory BPM</button>
   <h2 id="endHead">Drill Complete!</h2>
   <div id="endSub">Great taps. Beat this number next time!</div>
   <button class="next-player-btn" id="nextPlayerBtn">Next Player</button>
@@ -649,7 +649,7 @@ function endDrill(){
   $('endMisses').className='final-misses'+((misses===0&&noResponseCount===0)?' clean':'');
   lastAvgBpm=avgRT>0?bpmFromMs(avgRT):0;
   $('hearBpmBtn').style.display=lastAvgBpm>0?'inline-flex':'none';
-  $('bpmAvgLabel').innerHTML=lastAvgBpm>0?('Your Hooporia BPM Average: <b>'+lastAvgBpm+' BPM</b>'):'';
+  $('bpmAvgLabel').innerHTML=lastAvgBpm>0?('Your Flash Memory BPM Average: <b>'+lastAvgBpm+' BPM</b>'):'';
   $('bpmAvgLabel').style.display=lastAvgBpm>0?'block':'none';
 
   if(endedEarly){
@@ -674,7 +674,7 @@ function endDrill(){
 
 $('nextPlayerBtn').onclick=function(){$('screen-end').style.display='none';startDrill()};
 
-// "Hear Your Hooporia" — plays 10 real drum beats at the player's own
+// "Hear Your Flash Memory BPM" — plays 10 real drum beats at the player's own
 // average BPM, so a number like "184 BPM" becomes something they can
 // actually feel, not just read. Same kick-drum synthesis style used
 // elsewhere across Ritnome/Hooporia — a quick pitch drop plus a fast decay.
