@@ -202,7 +202,7 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 <div id="screen-intro">
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Reaction Velocity · Flash Reaction</div>
-  <div class="rule-t"><b>50 basketballs.</b> The ball flashes once, at 120 BPM, then goes blank — no new ball appears until you respond, right or wrong, or 3 full seconds pass. Read it and tap the matching direction. Respond within 600ms and it's a <b>3-pointer</b>; correct but slower is a <b>2-point shot</b>; wrong or no response is a <b>miss</b>, worth nothing. Three no-response balls in one game — spread out or in a row — ends the drill.</div>
+  <div class="rule-t"><b>50 basketballs.</b> The ball flashes at a random spot, with a real countdown ring around it — respond while the ring's still lit and it's a <b>3-pointer</b>; the ring closes, the ball goes blank, and correct-but-slower is now a <b>2-point shot</b>. Wrong or no response is a <b>miss</b>, worth nothing. No new ball appears until you respond, right or wrong, or 3 full seconds pass. Three no-response balls in one game — spread out or in a row — ends the drill.</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">START</button>
   <div class="best-line" id="bestLine"></div>
   <button class="box-open-btn" id="openBoxBtn">📊 BOX SCORE</button>
@@ -507,16 +507,18 @@ function nextTarget(){
   $('hLeft').textContent=Math.max(0,TOTAL-idx+1);
   shuffleButtonLayout();
 
-  // A real flash, not a continuous stare — the target shows for one
-  // beat at 120 BPM, then goes blank while the response window stays
-  // fully open. Tapping is valid the whole time, both during the
-  // brief flash and through the blank period after — this tests
-  // reading-and-recalling under real time pressure, not just reacting
-  // to something already sitting in front of you.
+  // The ball stays visible for exactly the same window the three-point
+  // ring is counting down — the two disappear together, as one honest
+  // signal, rather than the ball vanishing early and leaving the ring
+  // to finish counting down against a blank screen. Tapping is valid
+  // the whole time, both while it's visible and through any blank
+  // period after — this tests reading-and-recalling under real time
+  // pressure, not just reacting to something already sitting in front
+  // of you.
   clearTimeout(flashTimer);
   flashTimer=setTimeout(function(){
     stimulus.classList.remove('visible');
-  },FLASH_MS);
+  },FAST_MS);
 
   clearTimeout(roundTimer);
   roundTimer=setTimeout(handleTimeout,RESPONSE_TIMEOUT_MS);
