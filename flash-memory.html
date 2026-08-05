@@ -431,6 +431,7 @@ function startDrill(){
   if(phase==='running')return;
   $('screen-intro').style.display='none';
   resizeCourtToFit();
+  try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
   $('countdown').style.display='flex';
   var n=3;$('bigCount').textContent=n;
   var iv=setInterval(function(){
