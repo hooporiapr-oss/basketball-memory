@@ -132,12 +132,7 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 .hear-bpm-btn:disabled{opacity:.4;cursor:default}
 .hear-bpm-btn .beat-dot-ind{width:8px;height:8px;border-radius:50%;background:var(--cy);transition:transform .08s,opacity .08s}
 .hear-bpm-btn .beat-dot-ind.pulse{transform:scale(1.8);opacity:.4}
-.swish-text{position:fixed;z-index:30;pointer-events:none;font-family:Arial,Helvetica,sans-serif;font-weight:900;font-style:italic;letter-spacing:.02em;text-transform:uppercase;opacity:0;transform:translate(-50%,-50%) scale(.5);text-shadow:0 2px 8px rgba(0,0,0,.6)}
-.swish-text.show{animation:swishPop .5s ease-out forwards}
-.swish-text.green{color:#3ddc72;font-size:2.2rem;text-shadow:0 0 20px rgba(61,220,114,.9),0 2px 8px rgba(0,0,0,.6)}
-.swish-text.red{color:#ff6b6b;font-size:1.7rem}
-@keyframes swishPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
-  .final-misses{margin-top:6px;font-size:1rem;font-weight:900;color:var(--red)}
+.final-misses{margin-top:6px;font-size:1rem;font-weight:900;color:var(--red)}
 .final-misses.clean{color:#00D9A5}
 #screen-end h2{font-family:Arial,Helvetica,sans-serif;font-size:1.4rem;letter-spacing:1px;margin:12px 0 5px}
 #endSub{font-size:.8rem;color:var(--muted);line-height:1.4;max-width:320px}
@@ -323,16 +318,6 @@ var stimArrow=$('stimArrow');
 var stage=$('stage');
 var threeRing=$('threeRing');
 var threeRingCircle=$('threeRingCircle');
-function showSwish(isThree,pos){
-  var el=document.createElement('div');
-  el.className='swish-text '+(isThree?'green':'red');
-  el.textContent=isThree?'SWISH! 3!':'SWISH!';
-  el.style.left=pos.x+'px';
-  el.style.top=(pos.y-70)+'px';
-  document.getElementById('stage').appendChild(el);
-  requestAnimationFrame(function(){el.classList.add('show')});
-  setTimeout(function(){el.remove()},550);
-}
 var RING_CIRCUMFERENCE=2*Math.PI*65; // matches the r=65 circle in the SVG
 threeRingCircle.style.strokeDasharray=RING_CIRCUMFERENCE;
 var colorTimer=null;
@@ -621,7 +606,6 @@ function handleChoice(side){
     $('hLastMs').textContent=bpm;
     stimulus.classList.add('hit');
     setTimeout(function(){stimulus.classList.remove('hit')},100);
-    showSwish(isThree,pos);
     msg((isThree?'✓ 3-POINTER! (+3)':'✓ +2!')+' ('+bpm+' BPM)','correct');
   }else{
     // A wrong direction is a miss — zero, exactly like no response.
