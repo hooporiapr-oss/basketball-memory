@@ -11,6 +11,20 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #stars{position:fixed;inset:0;pointer-events:none;z-index:0}
 #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(124,58,237,.28),0 0 80px rgba(124,58,237,.1)}
 #flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
+#flash.buzzer{transition:opacity .35s ease-out}
+body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
+@keyframes buzzerShake{
+  0%,100%{transform:translate(0,0)}
+  10%{transform:translate(-6px,-4px)}
+  20%{transform:translate(7px,3px)}
+  30%{transform:translate(-8px,4px)}
+  40%{transform:translate(6px,-3px)}
+  50%{transform:translate(-5px,3px)}
+  60%{transform:translate(5px,-4px)}
+  70%{transform:translate(-4px,2px)}
+  80%{transform:translate(4px,-2px)}
+  90%{transform:translate(-2px,1px)}
+}
 
 #topClock{position:fixed;top:0;left:0;right:0;z-index:21;text-align:center;padding:10px 22px 4px;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent)}
 #topClock .clock-label{font-size:.5rem;color:#ffd35a;font-weight:900;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1px}
@@ -97,6 +111,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
+.hear-bpm-btn{margin-top:10px;height:40px;padding:0 20px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.08);border-radius:12px;color:#00e5ff;font-size:.76rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.hear-bpm-btn .beat-dot-ind{width:8px;height:8px;border-radius:50%;background:#00e5ff;transition:transform .08s,opacity .08s}
+.hear-bpm-btn .beat-dot-ind.pulse{transform:scale(1.8);opacity:.4}
 .final-acc{margin-top:6px;font-size:1.1rem;color:#ffd35a;font-weight:900}
 .final-misses{margin-top:10px;font-size:1.3rem;font-weight:900;color:#FF1493;text-shadow:0 0 20px rgba(255,20,147,.5)}
 .final-misses.clean{color:#00D9A5;text-shadow:0 0 20px rgba(0,217,165,.5)}
@@ -210,6 +227,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="final-bpm-big" id="endBpm"></div>
   <div class="final-acc" id="endAcc"></div>
   <div class="final-misses" id="endMisses"></div>
+  <div id="bpmAvgLabel" style="display:none;margin-top:6px;font-size:.85rem;color:#9fb3c8"></div>
+  <button class="hear-bpm-btn" id="hearBpmBtn" style="display:none"><span class="beat-dot-ind" id="beatDotInd"></span> Hear Your BPM</button>
   <h2 id="endHead">Drill Complete!</h2>
   <div id="endSub">Great choices. Next player, beat this number!</div>
   <button class="next-player-btn" id="nextPlayerBtn">▶ Next Player</button>
@@ -534,6 +553,19 @@ function endDrill(){
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
 
+  // The final buzzer — a real horn sound plus a screen shake, exactly
+  // the dramatic "time's up" moment a real game clock running out
+  // actually delivers. The end screen itself waits a beat behind it,
+  // so the buzzer moment gets to land before the numbers show up.
+  playBuzzer();
+  document.body.classList.add('buzzer-shake');
+  var f=$('flash');
+  f.classList.add('buzzer');
+  f.style.background='rgba(255,211,90,.5)';
+  f.style.opacity='1';
+  setTimeout(function(){f.style.opacity='0'},250);
+  setTimeout(function(){document.body.classList.remove('buzzer-shake');f.classList.remove('buzzer')},1000);
+
   $('endNum').textContent=finalScore;
   $('endBpm').textContent=correctCount+' SWISHES IN 60 SECONDS';
   $('endAcc').textContent=correctCount+'/'+idx+' made · '+accPct+'% accuracy';
@@ -552,9 +584,16 @@ function endDrill(){
   playersThisSession++;
   $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best pace: '+bpmFromMs(sessionBest)+' BPM'):'');
 
+  lastAvgBpm=avgRT>0?bpmFromMs(avgRT):0;
+  $('bpmAvgLabel').innerHTML=lastAvgBpm>0?('Your Average: <b>'+lastAvgBpm+' BPM</b>'):'';
+  $('bpmAvgLabel').style.display=lastAvgBpm>0?'block':'none';
+  $('hearBpmBtn').style.display=lastAvgBpm>0?'inline-flex':'none';
+
   window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses);
 
-  $('screen-end').style.display='flex';
+  timers.push(setTimeout(function(){
+    $('screen-end').style.display='flex';
+  },500));
 }
 
 function nextPlayer(){
@@ -562,6 +601,87 @@ function nextPlayer(){
   startDrill();
 }
 $('nextPlayerBtn').onclick=nextPlayer;
+
+// "Hear Your BPM" — plays 10 real drum beats at the player's own
+// average BPM, so a number like "184 BPM" becomes something they can
+// actually feel, not just read. Same kick-drum synthesis style used
+// elsewhere across Ritnome/Hooporia — a quick pitch drop plus a fast decay.
+var lastAvgBpm=0,beatPreviewPlaying=false;
+var beatAudioCtx=null;
+function getBeatAC(){if(!beatAudioCtx){try{beatAudioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return beatAudioCtx}
+function playPreviewDrum(){
+  var c=getBeatAC();if(!c)return;
+  try{
+    if(c.state==='suspended')c.resume();
+    var o=c.createOscillator(),g=c.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(150,c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(45,c.currentTime+0.12);
+    g.gain.setValueAtTime(0.85,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);
+    o.connect(g);g.connect(c.destination);
+    o.start();o.stop(c.currentTime+0.22);
+
+    var o2=c.createOscillator(),g2=c.createGain();
+    o2.type='triangle';
+    o2.frequency.setValueAtTime(900,c.currentTime);
+    o2.frequency.exponentialRampToValueAtTime(200,c.currentTime+0.03);
+    g2.gain.setValueAtTime(0.5,c.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.045);
+    o2.connect(g2);g2.connect(c.destination);
+    o2.start();o2.stop(c.currentTime+0.05);
+  }catch(e){}
+}
+$('hearBpmBtn').addEventListener('click',function(){
+  if(beatPreviewPlaying||lastAvgBpm<=0)return;
+  beatPreviewPlaying=true;
+  var btn=$('hearBpmBtn'),dot=$('beatDotInd');
+  btn.disabled=true;
+  var beatMs=Math.round(60000/lastAvgBpm);
+  var count=0;
+  function tick(){
+    if(count>=10){
+      beatPreviewPlaying=false;
+      btn.disabled=false;
+      return;
+    }
+    playPreviewDrum();
+    dot.classList.add('pulse');
+    setTimeout(function(){dot.classList.remove('pulse')},Math.min(140,beatMs*0.3));
+    count++;
+    setTimeout(tick,beatMs);
+  }
+  tick();
+});
+
+// The final buzzer — a real, harsh sustained horn tone, same synthesis
+// family as the drum hits but shaped completely differently: long,
+// loud, and unmistakable, exactly like a real game clock running out.
+function playBuzzer(){
+  var c=getBeatAC();if(!c)return;
+  try{
+    if(c.state==='suspended')c.resume();
+    var o=c.createOscillator(),g=c.createGain();
+    o.type='sawtooth';
+    o.frequency.setValueAtTime(220,c.currentTime);
+    g.gain.setValueAtTime(0.001,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.55,c.currentTime+0.05);
+    g.gain.setValueAtTime(0.55,c.currentTime+1.1);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.4);
+    o.connect(g);g.connect(c.destination);
+    o.start();o.stop(c.currentTime+1.45);
+
+    var o2=c.createOscillator(),g2=c.createGain();
+    o2.type='square';
+    o2.frequency.setValueAtTime(221,c.currentTime);
+    g2.gain.setValueAtTime(0.001,c.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.28,c.currentTime+0.05);
+    g2.gain.setValueAtTime(0.28,c.currentTime+1.1);
+    g2.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.4);
+    o2.connect(g2);g2.connect(c.destination);
+    o2.start();o2.stop(c.currentTime+1.45);
+  }catch(e){}
+}
 
 loadBest();
 </script>
