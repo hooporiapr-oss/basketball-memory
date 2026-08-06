@@ -486,10 +486,10 @@ function handleNoResponse(){
   stimulus.classList.remove('visible');
   idx++;
   misses++;
-  score=Math.max(0,score-3);
+  score-=3;
   flash('rgba(255,20,147,.28)');
   msg('✗ NO RESPONSE (-3)','wrong');
-  $('hScore').textContent=score;
+  $('hScore').textContent=Math.max(0,score);
   advanceOrEnd();
 }
 
@@ -525,13 +525,13 @@ function handleChoice(side){
     msg('✓ SWISH! (+3)','correct');
   }else{
     misses++;
-    score=Math.max(0,score-3);
+    score-=3;
     flash('rgba(255,20,147,.28)');
     $('hLastMs').textContent='MISS';
     msg('✗ MISS! (-3)','wrong');
   }
 
-  $('hScore').textContent=score;
+  $('hScore').textContent=Math.max(0,score);
 
   advanceOrEnd();
 }
@@ -558,10 +558,10 @@ function endDrill(){
     awaitingResponse=false;
     idx++;
     misses++;
-    score=Math.max(0,score-3);
+    score-=3;
   }
   phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();stimulus.classList.remove('visible');
-  var finalScore=score;
+  var finalScore=Math.max(0,score);
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
   var isNewPts=finalScore>best;
