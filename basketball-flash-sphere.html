@@ -549,7 +549,18 @@ function handleChoice(side){
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();awaitingResponse=false;stimulus.classList.remove('visible');
+  // If the clock runs out while a target is still actively on screen
+  // awaiting a response, that round must never just vanish from the
+  // tally — the player saw it and didn't get to respond in time,
+  // which is a real miss, exactly like any other no-response. Count
+  // it before finalizing anything else.
+  if(awaitingResponse){
+    awaitingResponse=false;
+    idx++;
+    misses++;
+    score=Math.max(0,score-3);
+  }
+  phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
