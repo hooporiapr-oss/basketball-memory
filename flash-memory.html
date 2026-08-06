@@ -46,7 +46,19 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 
 /* Stagnant, centered target — never moves. Only the arrow it carries
    changes, on the beat. */
-#court-area{position:fixed;top:9%;bottom:6%;left:0;right:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:6px 10px}
+#court-area{position:fixed;top:9%;bottom:15%;left:0;right:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:6px 10px}
+/* Live progress strip — sits directly under the response cells, right
+   where a player's attention already naturally is after every tap,
+   rather than somewhere they'd have to look away to notice. Fills in
+   green for a three, red for a two, X for a miss or timeout — a real,
+   growing record of the whole run, not just a flash per tap. */
+#liveProgress{position:fixed;bottom:calc(6px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:16;display:grid;grid-template-columns:repeat(50,1fr);gap:2px}
+.prog-box{height:16px;border-radius:3px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:900;color:#fff;font-family:Arial,Helvetica,sans-serif}
+.prog-box.p3{background:linear-gradient(135deg,#7dffa8,#3ddc72);border-color:#3ddc72;box-shadow:0 0 8px rgba(61,220,114,.7)}
+.prog-box.p2{background:rgba(255,60,60,.65);border-color:#ff3c3c;box-shadow:0 0 8px rgba(255,60,60,.6)}
+.prog-box.px{background:rgba(40,20,20,.7);border-color:#5a2a2a;color:#ff6b6b}
+.prog-box.pop{animation:progPop .3s ease-out}
+@keyframes progPop{0%{transform:scale(.3)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
 #court{position:relative;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(5,1fr);gap:4px;border:2px solid rgba(255,149,0,.4);border-radius:14px;padding:6px;background-color:#2b1810;background-image:url('data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20200%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%0A%20%20%3Crect%20width%3D%22200%22%20height%3D%22100%22%20fill%3D%22%233a1c0b%22/%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%22198%22%20height%3D%2298%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cline%20x1%3D%22100%22%20y1%3D%221%22%20x2%3D%22100%22%20y2%3D%2299%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%22100%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Crect%20x%3D%221%22%20y%3D%2231%22%20width%3D%2238%22%20height%3D%2238%22%20fill%3D%22rgba%28255%2C107%2C0%2C.08%29%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%2239%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cpath%20d%3D%22M%201%2C10%20A%2084%2C84%200%200%2C1%2061%2C50%20A%2084%2C84%200%200%2C1%201%2C90%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.3%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Crect%20x%3D%22161%22%20y%3D%2231%22%20width%3D%2238%22%20height%3D%2238%22%20fill%3D%22rgba%28255%2C107%2C0%2C.08%29%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Ccircle%20cx%3D%22161%22%20cy%3D%2250%22%20r%3D%2213%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.35%29%22%20stroke-width%3D%221.5%22/%3E%0A%20%20%3Cpath%20d%3D%22M%20199%2C10%20A%2084%2C84%200%200%2C0%20139%2C50%20A%2084%2C84%200%200%2C0%20199%2C90%22%20fill%3D%22none%22%20stroke%3D%22rgba%28255%2C178%2C116%2C.3%29%22%20stroke-width%3D%221.5%22/%3E%3C/svg%3E');background-size:100% 100%;box-shadow:0 0 60px rgba(255,149,0,.25),inset 0 0 40px rgba(255,149,0,.05)}
 .cell{border-radius:6px;background:rgba(255,149,0,.05);border:2px solid rgba(255,149,0,.28);position:relative;display:flex;align-items:center;justify-content:center}
 .cell.hit{animation:cellHit .18s}
@@ -171,6 +183,7 @@ html,body{height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--da
 <div id="msg" class="watch"></div>
 
 <div id="court-area"><div id="court"></div></div>
+<div id="liveProgress"></div>
 <svg class="gold-arrow" id="stimArrow" viewBox="0 0 100 100"><path d="M50,10 L88,52 L66,52 L66,90 L34,90 L34,52 L12,52 Z" fill="url(#goldGrad)" stroke="#4a4a58" stroke-width="2.5" stroke-linejoin="round"/></svg>
 
 <!-- INTRO -->
@@ -264,7 +277,7 @@ var BOX_KEY='hoop-flashmemory-boxscore';
 function $(id){return document.getElementById(id)}
 function bpmFromMs(v){return v?Math.round(60000/v):0}
 
-var FAST_MS=1500; // the "three-point line" — where the green ring
+var FAST_MS=1200; // the "three-point line" — where the green ring
 // phase ends and red begins. The ball and arrow flash for FLASH_MS
 // (700ms) and go blank; only then does the ring appear and start
 // counting down, green for its own separate 500ms (the same tuned
@@ -347,6 +360,11 @@ function resizeCourtToFit(){
   }
   court.style.width=targetW+'px';
   court.style.height=targetH+'px';
+  // The progress strip spans exactly the court's own width — true
+  // baseline to baseline, matching the court itself, not a fixed
+  // narrower box independent of it.
+  var prog=$('liveProgress');
+  if(prog)prog.style.width=targetW+'px';
 }
 window.addEventListener('resize',resizeCourtToFit);
 
@@ -450,7 +468,32 @@ function runDrill(){
   phase='running';idx=0;correctCount=0;misses=0;noResponseCount=0;totalRT=0;rtCount=0;score=0;threes=0;shotLog=[];
   currentCellIdx=-1;lastCellIdx=-1;
   $('hScore').textContent='0';$('hLeft').textContent=TOTAL;$('hLastMs').textContent='--';
+  buildLiveProgress();
   nextTarget();
+}
+
+// The 50-box progress strip sits directly under the response cells —
+// right where a player's attention already naturally is after every
+// tap, not somewhere they'd have to look away to notice. Starts fully
+// blank; each box fills in the moment its round resolves.
+var progBoxes=[];
+function buildLiveProgress(){
+  var el=$('liveProgress');
+  el.innerHTML='';
+  progBoxes=[];
+  for(var i=0;i<TOTAL;i++){
+    var b=document.createElement('div');
+    b.className='prog-box';
+    el.appendChild(b);
+    progBoxes.push(b);
+  }
+}
+function fillProgressBox(result){
+  var b=progBoxes[idx-1];
+  if(!b)return;
+  var cls=result==='3'?'p3':result==='2'?'p2':'px';
+  b.className='prog-box '+cls+' pop';
+  b.textContent=result==='3'?'3':result==='2'?'2':'×';
 }
 
 // Renders a full shot log into any container — used for the live
@@ -567,6 +610,7 @@ function handleTimeout(){
   // genuinely stopped engaging.
   noResponseCount++;
   pushShotChip('x');
+  fillProgressBox('x');
   $('hLastMs').textContent='No response';
   flashWrong();
   msg('✗ NO RESPONSE (0)','wrong');
@@ -608,6 +652,7 @@ function handleChoice(side){
     score+=pts;
     totalRT+=rt;rtCount++;
     pushShotChip(isThree?'3':'2');
+    fillProgressBox(isThree?'3':'2');
     $('hLastMs').textContent=bpm;
     var madeCell=cells[currentCellIdx];
     if(madeCell){madeCell.classList.add('made');setTimeout(function(){madeCell.classList.remove('made')},180);}
@@ -616,6 +661,7 @@ function handleChoice(side){
     // A wrong direction is a miss — zero, exactly like no response.
     misses++;
     pushShotChip('x');
+    fillProgressBox('x');
     flashWrong();
     msg('✗ WRONG! (0)','wrong');
   }
