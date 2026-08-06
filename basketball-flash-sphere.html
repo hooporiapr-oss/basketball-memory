@@ -12,11 +12,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:1;border:3px solid transparent;box-shadow:inset 0 0 80px rgba(124,58,237,.28),0 0 80px rgba(124,58,237,.1)}
 #flash{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .1s}
 
-#hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent)}
+#topClock{position:fixed;top:0;left:0;right:0;z-index:21;text-align:center;padding:10px 22px 4px;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent)}
+#topClock .clock-label{font-size:.5rem;color:#ffd35a;font-weight:900;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1px}
+#topClock .clock-val{font-size:2.6rem;font-weight:900;line-height:1;color:#fff;text-shadow:0 0 20px rgba(255,211,90,.6)}
+#topClock .clock-val.urgent{color:#FF1493;text-shadow:0 0 24px rgba(255,20,147,.8);animation:clockPulse .5s ease-in-out infinite}
+@keyframes clockPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+#hud{position:fixed;top:78px;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:center;padding:0 22px 10px}
 .hud-box{text-align:center}
 .hud-label{font-size:.5rem;color:#7c3aed;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
 .hud-val{font-size:2rem;font-weight:900;line-height:1}
-#hLeft{color:#a78bfa}#hScore{color:#fff;font-size:2.6rem}#hLastMs{color:#ffd35a}#hBest{font-size:1.3rem;color:#9fb3c8}
+#hScore{color:#fff;font-size:2.6rem}#hLastMs{color:#ffd35a}#hBest{font-size:1.3rem;color:#9fb3c8}
 
 #msg{position:fixed;top:16%;left:50%;transform:translate(-50%,0);z-index:20;font-size:1.5rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;text-align:center;pointer-events:none;text-shadow:0 0 30px currentColor;transition:opacity .3s}
 #msg.watch{color:#7c3aed}#msg.go{color:#ffd35a}#msg.correct{color:#00D9A5}#msg.wrong{color:#FF1493}
@@ -115,8 +120,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div id="flash"></div>
 </div>
 
+<div id="topClock">
+  <div class="clock-label">Time Left</div>
+  <div class="clock-val" id="hClock">1:00</div>
+</div>
+
 <div id="hud">
-  <div class="hud-box"><div class="hud-label">Left</div><div class="hud-val" id="hLeft">50</div></div>
   <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
   <div class="hud-box"><div class="hud-label">Last</div><div class="hud-val" id="hLastMs">--</div></div>
   <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
@@ -213,7 +222,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 var FLASH_BPM=180; // settled on through real testing — the one speed that works
 function getFlashMs(){return Math.round(60000/FLASH_BPM)}
 var PACE_MS=600;
-var TOTAL=50;
+var CONTEST_MS=60000; // how many threes can you make in a minute —
+// the clock is the only thing that ends this format, not a round count.
 var BEST_KEY='rct-flashreaction-best';
 var BEST_MS_KEY='rct-flashreaction-best-ms';
 
@@ -355,11 +365,33 @@ function startDrill(){
   },800);
 }
 
+var contestTimerInterval=null,contestEndAt=0;
 function runDrill(){
   phase='running';idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;
-  $('hScore').textContent='0';$('hLastMs').textContent='--';$('hLeft').textContent=TOTAL;
+  $('hScore').textContent='0';$('hLastMs').textContent='--';
   msg('GET READY...','go');
+
+  contestEndAt=performance.now()+CONTEST_MS;
+  updateContestClock();
+  clearInterval(contestTimerInterval);
+  contestTimerInterval=setInterval(function(){
+    updateContestClock();
+    if(performance.now()>=contestEndAt){
+      clearInterval(contestTimerInterval);
+      endDrill();
+    }
+  },100);
+
   timers.push(setTimeout(function(){msg('','go');nextTrial()},900));
+}
+function updateContestClock(){
+  var remainMs=Math.max(0,contestEndAt-performance.now());
+  var totalSec=Math.ceil(remainMs/1000);
+  var m=Math.floor(totalSec/60);
+  var s=totalSec%60;
+  var el=$('hClock');
+  el.textContent=m+':'+(s<10?'0':'')+s;
+  el.className='clock-val'+(totalSec<=10?' urgent':'');
 }
 
 function randomStagePos(){
@@ -428,19 +460,20 @@ function handleNoResponse(){
   if(!awaitingResponse)return;
   awaitingResponse=false;
   stimulus.classList.remove('visible');
-  msg('✗ NO RESPONSE — 5 SECONDS','wrong');
-  timers.push(setTimeout(endDrill,600));
+  idx++;
+  misses++;
+  score=Math.max(0,score-3);
+  flash('rgba(255,20,147,.28)');
+  msg('✗ NO RESPONSE (-3)','wrong');
+  $('hScore').textContent=score;
+  advanceOrEnd();
 }
 
 function advanceOrEnd(){
-  if(idx>=TOTAL){
-    timers.push(setTimeout(endDrill,500));
-  }else{
-    timers.push(setTimeout(function(){
-      if(phase==='running')msg('','go');
-      nextTrial();
-    },PACE_MS));
-  }
+  timers.push(setTimeout(function(){
+    if(phase==='running')msg('','go');
+    nextTrial();
+  },PACE_MS));
 }
 
 function handleChoice(side){
@@ -462,19 +495,19 @@ function handleChoice(side){
 
   if(isCorrect){
     correctCount++;
-    score+=2;
+    score+=3;
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
-    $('hLastMs').textContent=Math.round(rt);
-    msg('✓ 2PT SHOT! ('+Math.round(rt)+' MS · '+bpmFromMs(rt)+' BPM)','correct');
+    $('hLastMs').textContent='SWISH';
+    msg('✓ SWISH! (+3)','correct');
   }else{
     misses++;
-    score=Math.max(0,score-2);
+    score=Math.max(0,score-3);
     flash('rgba(255,20,147,.28)');
-    msg('✗ WRONG DIRECTION! (-2 PTS · '+Math.round(rt)+' MS)','wrong');
+    $('hLastMs').textContent='MISS';
+    msg('✗ MISS! (-3)','wrong');
   }
 
   $('hScore').textContent=score;
-  $('hLeft').textContent=Math.max(0,TOTAL-idx);
 
   advanceOrEnd();
 }
@@ -492,45 +525,34 @@ function handleChoice(side){
 
 function endDrill(){
   if(phase==='done')return;
-  phase='done';clrT();stopNoResponseTimer();awaitingResponse=false;stimulus.classList.remove('visible');
+  phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();awaitingResponse=false;stimulus.classList.remove('visible');
   var finalScore=score;
   var avgRT=rtCount?Math.round(totalRT/rtCount):0;
   var accPct=idx>0?Math.round((correctCount/idx)*100):0;
-  var completed=(idx>=TOTAL);
-  var isNewPts=completed&&finalScore>best;
-  var isNewMs=completed&&avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
+  var isNewPts=finalScore>best;
+  var isNewMs=avgRT>0&&(bestAvgMs===0||avgRT<bestAvgMs);
   if(isNewPts){best=finalScore;saveBest()}
   if(isNewMs){bestAvgMs=avgRT;saveBestMs()}
 
   $('endNum').textContent=finalScore;
-  $('endBpm').textContent='Avg '+avgRT+' MS · '+bpmFromMs(avgRT)+' BPM';
-  if(completed){
-    $('endAcc').textContent=correctCount+'/'+TOTAL+' correct · '+accPct+'% accuracy';
-    $('endMisses').textContent=misses+' MISS'+(misses===1?'':'ES')+(misses>0?' (-'+(misses*2)+' PTS)':'');
-    $('endMisses').className='final-misses'+(misses===0?' clean':'');
+  $('endBpm').textContent=correctCount+' SWISHES IN 60 SECONDS';
+  $('endAcc').textContent=correctCount+'/'+idx+' made · '+accPct+'% accuracy';
+  $('endMisses').textContent=misses+' MISS'+(misses===1?'':'ES')+(misses>0?' (-'+(misses*3)+' PTS)':'');
+  $('endMisses').className='final-misses'+(misses===0?' clean':'');
+
+  if(isNewPts&&finalScore>0){
+    $('endHead').textContent='🎉 New Best!';$('endSub').textContent='New high score — '+finalScore+' points, '+correctCount+' swishes. Nothing but net!';
   }else{
-    $('endAcc').textContent=idx+'/'+TOTAL+' rounds played';
-    $('endMisses').textContent='';
+    $('endHead').textContent="Time's Up!";$('endSub').textContent='Great shooting. Next player, beat this number!';
   }
 
-  if(!completed){
-    $('endHead').textContent='Drill Ended Early';
-    $('endSub').textContent="Only a completed 50-round drill posts to your Box Score — this one didn't count. Give it another go!";
-  }else if(isNewPts&&finalScore>0){
-    $('endHead').textContent='🎉 New Best!';$('endSub').textContent='New high score — '+finalScore+' points, '+correctCount+'/'+TOTAL+' correct. Nothing but net!';
-  }else{
-    $('endHead').textContent='Drill Complete!';$('endSub').textContent='Great choices. Next player, beat this number!';
-  }
-
-  if(completed&&avgRT>0&&(sessionBest===0||avgRT<sessionBest)){
+  if(avgRT>0&&(sessionBest===0||avgRT<sessionBest)){
     sessionBest=avgRT;
   }
   playersThisSession++;
-  $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best: '+sessionBest+'ms · '+bpmFromMs(sessionBest)+' BPM'):'');
+  $('sessionLine').textContent='Players this session: '+playersThisSession+(sessionBest>0?('  ·  Best pace: '+bpmFromMs(sessionBest)+' BPM'):'');
 
-  if(completed){
-    window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses);
-  }
+  window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses);
 
   $('screen-end').style.display='flex';
 }
