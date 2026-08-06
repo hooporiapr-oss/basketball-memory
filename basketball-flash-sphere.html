@@ -116,24 +116,6 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
-.hear-bpm-btn{margin-top:10px;height:40px;padding:0 20px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.08);border-radius:12px;color:#00e5ff;font-size:.76rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-.hear-bpm-btn .beat-ball-ind{
-  width:18px;height:18px;border-radius:50%;flex:0 0 auto;
-  background:
-    url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22c%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2249%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg%20clip-path%3D%22url%28%23c%29%22%20fill%3D%22none%22%20stroke%3D%22%23231005%22%20stroke-width%3D%225%22%3E%3Cline%20x1%3D%2250%22%20y1%3D%22-4%22%20x2%3D%2250%22%20y2%3D%22104%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20-4%20104%2050%22/%3E%3Cpath%20d%3D%22M%20-4%2050%20Q%2050%20104%20104%2050%22/%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2250%22%20rx%3D%2224%22%20ry%3D%2249%22/%3E%3C/g%3E%3C/svg%3E'),
-    radial-gradient(circle at 35% 32%,#ffb35c,#ff8c00 55%,#d9660a 85%);
-  background-size:100% 100%,100% 100%;
-  box-shadow:0 0 10px rgba(255,140,0,.7);
-  transform:translateY(0) scale(1);
-  transform-origin:center 26px;
-}
-.hear-bpm-btn .beat-ball-ind.bounce{animation-name:ballBounce;animation-timing-function:cubic-bezier(.4,0,.6,1)}
-@keyframes ballBounce{
-  0%{transform:translateY(0) scale(1,1)}
-  35%{transform:translateY(9px) scale(1.12,.86)}
-  65%{transform:translateY(-3px) scale(.95,1.06)}
-  100%{transform:translateY(0) scale(1,1)}
-}
 .final-acc{margin-top:6px;font-size:1.1rem;color:#ffd35a;font-weight:900}
 .final-misses{margin-top:10px;font-size:1.3rem;font-weight:900;color:#FF1493;text-shadow:0 0 20px rgba(255,20,147,.5)}
 .final-misses.clean{color:#00D9A5;text-shadow:0 0 20px rgba(0,217,165,.5)}
@@ -248,7 +230,6 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="final-acc" id="endAcc"></div>
   <div class="final-misses" id="endMisses"></div>
   <div id="bpmAvgLabel" style="display:none;margin-top:6px;font-size:.85rem;color:#9fb3c8"></div>
-  <button class="hear-bpm-btn" id="hearBpmBtn" style="display:none"><span class="beat-ball-ind" id="beatDotInd"></span> Hear Your BPM</button>
   <h2 id="endHead">Drill Complete!</h2>
   <div id="endSub">Great choices. Next player, beat this number!</div>
   <button class="next-player-btn" id="nextPlayerBtn">▶ Next Player</button>
@@ -618,7 +599,6 @@ function endDrill(){
   lastAvgBpm=avgRT>0?bpmFromMs(avgRT):0;
   $('bpmAvgLabel').innerHTML=lastAvgBpm>0?('Your Average: <b>'+lastAvgBpm+' BPM</b>'):'';
   $('bpmAvgLabel').style.display=lastAvgBpm>0?'block':'none';
-  $('hearBpmBtn').style.display=lastAvgBpm>0?'inline-flex':'none';
 
   window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses);
 
@@ -633,65 +613,11 @@ function nextPlayer(){
 }
 $('nextPlayerBtn').onclick=nextPlayer;
 
-// "Hear Your BPM" — plays 10 real drum beats at the player's own
-// average BPM, so a number like "184 BPM" becomes something they can
-// actually feel, not just read. Same kick-drum synthesis style used
-// elsewhere across Ritnome/Hooporia — a quick pitch drop plus a fast decay.
-var lastAvgBpm=0,beatPreviewPlaying=false;
+var lastAvgBpm=0;
 var beatAudioCtx=null;
 function getBeatAC(){if(!beatAudioCtx){try{beatAudioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return beatAudioCtx}
-function playPreviewDrum(){
-  var c=getBeatAC();if(!c)return;
-  try{
-    if(c.state==='suspended')c.resume();
-    var o=c.createOscillator(),g=c.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(150,c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(45,c.currentTime+0.12);
-    g.gain.setValueAtTime(0.85,c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);
-    o.connect(g);g.connect(c.destination);
-    o.start();o.stop(c.currentTime+0.22);
 
-    var o2=c.createOscillator(),g2=c.createGain();
-    o2.type='triangle';
-    o2.frequency.setValueAtTime(900,c.currentTime);
-    o2.frequency.exponentialRampToValueAtTime(200,c.currentTime+0.03);
-    g2.gain.setValueAtTime(0.5,c.currentTime);
-    g2.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.045);
-    o2.connect(g2);g2.connect(c.destination);
-    o2.start();o2.stop(c.currentTime+0.05);
-  }catch(e){}
-}
-$('hearBpmBtn').addEventListener('click',function(){
-  if(beatPreviewPlaying||lastAvgBpm<=0)return;
-  beatPreviewPlaying=true;
-  var btn=$('hearBpmBtn'),dot=$('beatDotInd');
-  btn.disabled=true;
-  var beatMs=Math.round(60000/lastAvgBpm);
-  var bounceMs=Math.min(beatMs*0.85,320); // the bounce always fits inside
-  // one beat, however fast or slow the player's own pace turns out to be
-  var count=0;
-  function tick(){
-    if(count>=10){
-      beatPreviewPlaying=false;
-      btn.disabled=false;
-      return;
-    }
-    playPreviewDrum();
-    dot.classList.remove('bounce');
-    void dot.offsetWidth; // force reflow so the animation restarts fresh on every beat, not just the first
-    dot.style.animationDuration=bounceMs+'ms';
-    dot.classList.add('bounce');
-    count++;
-    setTimeout(tick,beatMs);
-  }
-  tick();
-});
-
-// The final buzzer — a real, harsh sustained horn tone, same synthesis
-// family as the drum hits but shaped completely differently: long,
-// loud, and unmistakable, exactly like a real game clock running out.
+// The final buzzer — a real, harsh sustained horn tone.
 function playBuzzer(){
   var c=getBeatAC();if(!c)return;
   try{
