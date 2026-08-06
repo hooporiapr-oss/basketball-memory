@@ -142,17 +142,17 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
 </div>
 
 <div id="controls">
-  <a class="ctrl-btn" href="vr-lab.html">← Exit</a>
+  <a class="ctrl-btn" href="hooporia-lab.html">← Exit</a>
   <button class="ctrl-btn" id="fsBtnGame">⛶ Full Screen</button>
 </div>
 
 <!-- INTRO -->
 <div id="screen-intro">
-  <a class="intro-back" href="vr-lab.html">← Exit</a>
+  <a class="intro-back" href="hooporia-lab.html">← Exit</a>
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Reaction Velocity · Flash &amp; Recall</div>
-  <div class="rule-t"><b>50 rounds.</b> A target flashes once, at a new spot each time — no wandering, one beat at 180 BPM — carrying an arrow. Then it's gone, screen goes black. Read it, remember it, and tap the matching direction whenever you're ready. Same scoring, same rules as Choice Reaction — just testing the moment right after, not the moment you're looking straight at it.</div>
+  <div class="rule-t"><b>60 seconds.</b> A basketball flashes once, at a new spot each time, carrying an arrow. Then it's gone — read it, remember it, and tap the matching direction whenever you're ready. Every make is a real three-pointer, worth <b>+3</b>. A wrong direction or no response at all costs <b>-3</b>. How many swishes can you hit before the clock runs out?</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
   <button class="box-open-btn" id="openBoxBtn">📊 THE BOX SCORE</button>
@@ -166,7 +166,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-section">
     <div class="box-section-label">Last Game</div>
     <table class="box-table">
-      <thead><tr><th>PTS</th><th>FG</th><th>FG%</th><th>AVG MS</th><th>MISS</th></tr></thead>
+      <thead><tr><th>PTS</th><th>FG</th><th>FG%</th><th>AVG BPM</th><th>MISS</th></tr></thead>
       <tbody><tr>
         <td class="box-pts" id="boxLastPts">--</td>
         <td id="boxLastFg">--</td>
@@ -180,7 +180,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <div class="box-section">
     <div class="box-section-label">Career</div>
     <table class="box-table">
-      <thead><tr><th>GP</th><th>PPG</th><th>FG%</th><th>HIGH</th><th>AVG MS</th><th>MISS/G</th></tr></thead>
+      <thead><tr><th>GP</th><th>PPG</th><th>FG%</th><th>HIGH</th><th>AVG BPM</th><th>MISS/G</th></tr></thead>
       <tbody><tr>
         <td id="boxGP">--</td>
         <td class="box-pts" id="boxPPG">--</td>
@@ -215,7 +215,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;co
   <button class="next-player-btn" id="nextPlayerBtn">▶ Next Player</button>
   <button class="box-open-btn" id="openBoxBtnEnd">📊 THE BOX SCORE</button>
   <div class="session-line" id="sessionLine"></div>
-  <a class="intro-back" href="vr-lab.html" style="position:static;margin-top:22px;display:inline-block">← Exit</a>
+  <a class="intro-back" href="hooporia-lab.html" style="position:static;margin-top:22px;display:inline-block">← Exit</a>
 </div>
 
 <script>
@@ -284,14 +284,14 @@ function renderBoxScore(lastGame){
     $('boxLastPts').textContent=lastGame.pts;
     $('boxLastFg').textContent=lastGame.made+'-'+lastGame.attempts;
     $('boxLastFgPct').textContent=pct(lastGame.made,lastGame.attempts);
-    $('boxLastMs').textContent=lastGame.ms>0?lastGame.ms+' ms':'--';
+    $('boxLastMs').textContent=lastGame.ms>0?bpmFromMs(lastGame.ms)+' BPM':'--';
     $('boxLastMiss').textContent=(typeof lastGame.miss==='number')?lastGame.miss:'--';
   }else if(d.recent.length){
     var l=d.recent[0];
     $('boxLastPts').textContent=l.pts;
     $('boxLastFg').textContent=l.made+'-'+l.attempts;
     $('boxLastFgPct').textContent=pct(l.made,l.attempts);
-    $('boxLastMs').textContent=l.ms>0?l.ms+' ms':'--';
+    $('boxLastMs').textContent=l.ms>0?bpmFromMs(l.ms)+' BPM':'--';
     $('boxLastMiss').textContent=(typeof l.miss==='number')?l.miss:'--';
   }else{
     $('boxLastPts').textContent='--';$('boxLastFg').textContent='--';$('boxLastFgPct').textContent='--';$('boxLastMs').textContent='--';$('boxLastMiss').textContent='--';
@@ -301,7 +301,7 @@ function renderBoxScore(lastGame){
   $('boxPPG').textContent=d.gp>0?(d.totalPts/d.gp).toFixed(1):'--';
   $('boxCareerFgPct').textContent=pct(d.totalMade,d.totalAttempts);
   $('boxHigh').textContent=d.high>0?d.high:'--';
-  $('boxCareerMs').textContent=d.gp>0?Math.round(d.totalMs/d.gp)+' ms':'--';
+  $('boxCareerMs').textContent=d.gp>0?bpmFromMs(Math.round(d.totalMs/d.gp))+' BPM':'--';
   $('boxCareerMiss').textContent=d.gp>0?(d.totalMisses/d.gp).toFixed(1):'--';
 
   var listEl=$('boxRecentList');
@@ -310,7 +310,7 @@ function renderBoxScore(lastGame){
   }else{
     listEl.innerHTML=d.recent.map(function(g){
       var missText=(typeof g.miss==='number')?(' · '+g.miss+' miss'+(g.miss===1?'':'es')):'';
-      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+g.ms+'ms'+missText+'</span></div>';
+      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+bpmFromMs(g.ms)+' BPM'+missText+'</span></div>';
     }).join('');
   }
 }
