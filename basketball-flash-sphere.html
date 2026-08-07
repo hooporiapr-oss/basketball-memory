@@ -579,7 +579,11 @@ function handleChoice(side){
 
   if(isCorrect){
     correctCount++;
-    var tapPts=Math.max(1,Math.round(300-rt/4));
+    // Speed-sensitive scoring: 300 points at an instant tap, decaying
+    // down to exactly 1 point at 30 BPM (2000ms) — the floor now sits
+    // at a genuinely slow pace, not one that was cutting off anyone
+    // slower than 50 BPM to a flat 1 point.
+    var tapPts=Math.max(1,Math.round(300-rt/6.689));
     score+=tapPts;
     shotLog.push({hit:true,bpm:bpmFromMs(rt),pts:tapPts});
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
