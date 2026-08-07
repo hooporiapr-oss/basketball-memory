@@ -185,7 +185,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Hooporia Basketball · Flash &amp; Recall</div>
-  <div class="rule-t"><b>60 seconds.</b> A basketball flashes once, at a new spot each time, carrying an arrow. Then it's gone — read it, remember it, and tap the matching direction whenever you're ready. Every make is scored on real speed — the faster you are, the more points you earn. A wrong direction or no response at all costs <b>-3</b>. How many points can you rack up before the clock runs out?</div>
+  <div class="rule-t"><b>60 seconds.</b> A basketball flashes once, at a new spot each time, carrying an arrow. Then it's gone — read it, remember it, and tap the matching direction whenever you're ready. Every make is scored on real speed — the faster you are, the more points you earn. A wrong direction or no response at all earns nothing, but costs you nothing either. How many points can you rack up before the clock runs out?</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
   <button class="box-open-btn" id="openBoxBtn">📊 THE BOX SCORE</button>
@@ -546,10 +546,9 @@ function handleNoResponse(){
   stimulus.classList.remove('visible');
   idx++;
   misses++;
-  score-=3;
-  shotLog.push({hit:false,bpm:0,pts:-3,noResponse:true});
+  shotLog.push({hit:false,bpm:0,pts:0,noResponse:true});
   flash('rgba(255,20,147,.28)');
-  msg('✗ NO RESPONSE (-3)','wrong');
+  msg('✗ NO RESPONSE (0 PTS)','wrong');
   $('hScore').textContent=Math.max(0,score);
   advanceOrEnd();
 }
@@ -588,11 +587,10 @@ function handleChoice(side){
     msg(bpmFromMs(rt)+' BPM · +'+tapPts+' PTS','correct');
   }else{
     misses++;
-    score-=3;
-    shotLog.push({hit:false,bpm:bpmFromMs(rt),pts:-3,noResponse:false});
+    shotLog.push({hit:false,bpm:bpmFromMs(rt),pts:0,noResponse:false});
     flash('rgba(255,20,147,.28)');
     $('hLastMs').textContent='MISS';
-    msg('✗ MISS! (-3)','wrong');
+    msg('✗ MISS! (0 PTS)','wrong');
   }
 
   $('hScore').textContent=Math.max(0,score);
@@ -622,7 +620,7 @@ function endDrill(){
     awaitingResponse=false;
     idx++;
     misses++;
-    score-=3;
+    shotLog.push({hit:false,bpm:0,pts:0,noResponse:true});
   }
   phase='done';clrT();clearInterval(contestTimerInterval);stopNoResponseTimer();stimulus.classList.remove('visible');
   var finalScore=Math.max(0,score);
@@ -649,7 +647,7 @@ function endDrill(){
   $('endNum').textContent=finalScore;
   $('endBpm').textContent=correctCount+' SWISHES IN 60 SECONDS';
   $('endAcc').textContent=correctCount+'/'+idx+' made · '+accPct+'% accuracy';
-  $('endMisses').textContent=misses+' MISS'+(misses===1?'':'ES')+(misses>0?' (-'+(misses*3)+' PTS)':'');
+  $('endMisses').textContent=misses+' MISS'+(misses===1?'':'ES');
   $('endMisses').className='final-misses'+(misses===0?' clean':'');
 
   if(isNewPts&&finalScore>0){
