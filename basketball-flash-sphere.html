@@ -171,7 +171,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <button class="intro-fs" id="fsBtn">⛶ Fullscreen</button>
   <div class="vrr-logo">FLASH <span>REACTION</span></div>
   <div class="vrr-sub">Hooporia Basketball · Flash &amp; Recall</div>
-  <div class="rule-t"><b>60 seconds.</b> A basketball flashes once, at a new spot each time, carrying an arrow. Then it's gone — read it, remember it, and tap the matching direction whenever you're ready. Every make is a real three-pointer, worth <b>+3</b>. A wrong direction or no response at all costs <b>-3</b>. How many swishes can you hit before the clock runs out?</div>
+  <div class="rule-t"><b>60 seconds.</b> A basketball flashes once, at a new spot each time, carrying an arrow. Then it's gone — read it, remember it, and tap the matching direction whenever you're ready. Every make is scored on real speed — the faster you are, the more points you earn. A wrong direction or no response at all costs <b>-3</b>. How many points can you rack up before the clock runs out?</div>
   <button class="big-btn" id="bigStart" onclick="startDrill()">▶ START</button>
   <div class="best-line" id="bestLine"></div>
   <button class="box-open-btn" id="openBoxBtn">📊 THE BOX SCORE</button>
@@ -515,10 +515,11 @@ function handleChoice(side){
 
   if(isCorrect){
     correctCount++;
-    score+=3;
+    var tapPts=Math.max(1,Math.round(300-rt/4));
+    score+=tapPts;
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
-    $('hLastMs').textContent='SWISH';
-    msg('✓ SWISH! (+3)','correct');
+    $('hLastMs').textContent=bpmFromMs(rt);
+    msg(bpmFromMs(rt)+' BPM · +'+tapPts+' PTS','correct');
   }else{
     misses++;
     score-=3;
