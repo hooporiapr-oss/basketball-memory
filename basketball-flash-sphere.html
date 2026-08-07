@@ -109,7 +109,21 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 .box-table .box-pts{color:#00e5ff;font-size:1.4rem}
 .box-empty{color:#7fa8c0;font-size:.85rem;padding:24px 8px;font-style:italic}
 .box-back-btn{width:100%;max-width:440px;height:56px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 30px rgba(124,58,237,.6);margin-top:6px}
-.box-recent-row{font-size:.75rem;color:#9fb3c8;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;padding:8px 10px}
+.box-recent-row{font-size:.75rem;color:#9fb3c8;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;padding:8px 10px;cursor:pointer}
+.box-recent-row:hover{background:rgba(124,58,237,.08)}
+.box-recent-row .expand-hint{color:#7c3aed;font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;margin-left:8px}
+/* Tap-by-tap — the full, ordered history of a single game, not just
+   its summary numbers. A real reference point for how the total
+   points actually built up, hit by hit. */
+.tap-log{display:flex;flex-wrap:wrap;gap:4px;padding:10px;background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.25);border-radius:12px;margin-top:8px}
+.tap-chip{flex:0 0 auto;min-width:44px;padding:4px 6px;border-radius:7px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:.62rem;font-weight:900;line-height:1.3}
+.tap-chip.hit{background:rgba(124,58,237,.22);border:1px solid rgba(124,58,237,.5);color:#c4b5fd}
+.tap-chip.miss{background:rgba(255,20,147,.16);border:1px solid rgba(255,20,147,.4);color:#ff8fb8}
+.tap-chip .tap-bpm{display:block;font-size:.68rem}
+.tap-chip .tap-pts{display:block;opacity:.85;font-size:.58rem;margin-top:1px}
+.tap-log-total{width:100%;text-align:center;margin-top:8px;padding-top:8px;border-top:1px solid rgba(124,58,237,.25);font-size:.85rem;font-weight:900;color:#fff}
+.tap-log-total b{color:#00e5ff;font-size:1.1rem}
+.tap-log-empty{color:#7fa8c0;font-size:.75rem;font-style:italic;padding:8px}
 .box-recent-row:last-child{border-bottom:none}
 .box-recent-row b{color:#ffd35a}
 .box-open-btn{width:100%;max-width:420px;height:52px;border:2px solid rgba(0,229,255,.5);background:rgba(0,229,255,.1);border-radius:14px;color:#00e5ff;font-size:.9rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:6px}
@@ -194,6 +208,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
         <td id="boxLastMiss">--</td>
       </tr></tbody>
     </table>
+    <div class="tap-log" id="lastGameTapLog"></div>
   </div>
 
   <div class="box-section">
@@ -214,6 +229,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="box-section">
     <div class="box-section-label">Recent Games</div>
     <div class="box-table" id="boxRecentList" style="border-radius:12px"></div>
+    <div class="tap-log" id="recentGameTapLog" style="display:none"></div>
   </div>
 
   <button class="box-back-btn" id="closeBoxBtn">← Back</button>
@@ -251,6 +267,10 @@ function $(id){return document.getElementById(id)}
 
 var phase='idle';
 var idx=0,score=0,best=0,correctCount=0,totalRT=0,rtCount=0,bestAvgMs=0,misses=0;
+var shotLog=[]; // the full, ordered history of every tap this game —
+// hit or miss, with the exact BPM and points each one earned. This is
+// what makes the Box Score's tap-by-tap view possible, not just the
+// final summary numbers.
 var timers=[],tapLocked=false,shownAt=0,currentSide=null,awaitingResponse=false;
 var sessionBest=0, playersThisSession=0;
 var stimulus=$('stimulus'),stage=$('stage');
@@ -278,7 +298,7 @@ function loadBoxData(){
 }
 function saveBoxData(d){try{localStorage.setItem(BOX_KEY,JSON.stringify(d))}catch(e){}}
 
-function recordGameToBoxScore(finalScore,made,attempts,avgMs,missCount){
+function recordGameToBoxScore(finalScore,made,attempts,avgMs,missCount,shots){
   var d=loadBoxData();
   if(typeof d.totalMisses!=='number')d.totalMisses=0; // safe upgrade for any box score saved before this stat existed
   d.gp++;
@@ -288,7 +308,7 @@ function recordGameToBoxScore(finalScore,made,attempts,avgMs,missCount){
   d.totalMs+=avgMs;
   d.totalMisses+=missCount;
   if(finalScore>d.high)d.high=finalScore;
-  d.recent.unshift({pts:finalScore,made:made,attempts:attempts,ms:avgMs,miss:missCount,date:new Date().toLocaleDateString()});
+  d.recent.unshift({pts:finalScore,made:made,attempts:attempts,ms:avgMs,miss:missCount,date:new Date().toLocaleDateString(),shots:shots||[]});
   if(d.recent.length>8)d.recent=d.recent.slice(0,8);
   saveBoxData(d);
   return d;
@@ -296,16 +316,37 @@ function recordGameToBoxScore(finalScore,made,attempts,avgMs,missCount){
 
 function pct(made,attempts){return attempts>0?Math.round((made/attempts)*100)+'%':'--'}
 
+// Renders one game's full tap-by-tap history into a container — a
+// real, ordered record of every hit and miss with its own BPM and
+// point value, plus the game's actual final total, so someone can see
+// exactly how that number was built, not just what it added up to.
+function renderTapLog(container,shots,finalScore){
+  if(!shots||!shots.length){
+    container.innerHTML='<div class="tap-log-empty">No tap-by-tap detail saved for this game.</div>';
+    return;
+  }
+  var chips=shots.map(function(s){
+    if(s.hit){
+      return '<div class="tap-chip hit"><span class="tap-bpm">'+s.bpm+' BPM</span><span class="tap-pts">+'+s.pts+'</span></div>';
+    }
+    var label=s.noResponse?'NO RESP':(s.bpm>0?s.bpm+' BPM':'MISS');
+    return '<div class="tap-chip miss"><span class="tap-bpm">'+label+'</span><span class="tap-pts">'+s.pts+'</span></div>';
+  }).join('');
+  container.innerHTML=chips+'<div class="tap-log-total">Final Total: <b>'+finalScore+' PTS</b></div>';
+}
+
 function renderBoxScore(lastGame){
   var d=loadBoxData();
   if(typeof d.totalMisses!=='number')d.totalMisses=0;
 
+  var lastShots=null,lastFinalScore=0;
   if(lastGame){
     $('boxLastPts').textContent=lastGame.pts;
     $('boxLastFg').textContent=lastGame.made+'-'+lastGame.attempts;
     $('boxLastFgPct').textContent=pct(lastGame.made,lastGame.attempts);
     $('boxLastMs').textContent=lastGame.ms>0?bpmFromMs(lastGame.ms)+' BPM':'--';
     $('boxLastMiss').textContent=(typeof lastGame.miss==='number')?lastGame.miss:'--';
+    lastShots=lastGame.shots;lastFinalScore=lastGame.pts;
   }else if(d.recent.length){
     var l=d.recent[0];
     $('boxLastPts').textContent=l.pts;
@@ -313,9 +354,11 @@ function renderBoxScore(lastGame){
     $('boxLastFgPct').textContent=pct(l.made,l.attempts);
     $('boxLastMs').textContent=l.ms>0?bpmFromMs(l.ms)+' BPM':'--';
     $('boxLastMiss').textContent=(typeof l.miss==='number')?l.miss:'--';
+    lastShots=l.shots;lastFinalScore=l.pts;
   }else{
     $('boxLastPts').textContent='--';$('boxLastFg').textContent='--';$('boxLastFgPct').textContent='--';$('boxLastMs').textContent='--';$('boxLastMiss').textContent='--';
   }
+  renderTapLog($('lastGameTapLog'),lastShots,lastFinalScore);
 
   $('boxGP').textContent=d.gp;
   $('boxPPG').textContent=d.gp>0?(d.totalPts/d.gp).toFixed(1):'--';
@@ -325,13 +368,34 @@ function renderBoxScore(lastGame){
   $('boxCareerMiss').textContent=d.gp>0?(d.totalMisses/d.gp).toFixed(1):'--';
 
   var listEl=$('boxRecentList');
+  var tapLogEl=$('recentGameTapLog');
+  tapLogEl.style.display='none';
+  var openRowIdx=-1;
   if(!d.recent.length){
     listEl.innerHTML='<div class="box-empty">No games played yet — play a round to start your box score.</div>';
   }else{
-    listEl.innerHTML=d.recent.map(function(g){
+    listEl.innerHTML=d.recent.map(function(g,i){
       var missText=(typeof g.miss==='number')?(' · '+g.miss+' miss'+(g.miss===1?'':'es')):'';
-      return '<div class="box-recent-row"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+bpmFromMs(g.ms)+' BPM'+missText+'</span></div>';
+      return '<div class="box-recent-row" data-idx="'+i+'"><span>'+g.date+'</span><span><b>'+g.pts+' PTS</b> · '+g.made+'-'+g.attempts+' ('+pct(g.made,g.attempts)+') · '+bpmFromMs(g.ms)+' BPM'+missText+'<span class="expand-hint">tap for detail</span></span></div>';
     }).join('');
+    // The line-item summary is the default view; tapping any past
+    // game reveals that SAME game's full tap-by-tap history, reusing
+    // the exact same rendering the current game already gets.
+    listEl.querySelectorAll('.box-recent-row').forEach(function(row){
+      row.addEventListener('click',function(){
+        var idx=parseInt(row.dataset.idx,10);
+        if(openRowIdx===idx){
+          tapLogEl.style.display='none';
+          openRowIdx=-1;
+          return;
+        }
+        openRowIdx=idx;
+        var g=d.recent[idx];
+        renderTapLog(tapLogEl,g.shots,g.pts);
+        tapLogEl.style.display='flex';
+        row.insertAdjacentElement('afterend',tapLogEl);
+      });
+    });
   }
 }
 
@@ -387,7 +451,7 @@ function startDrill(){
 
 var contestTimerInterval=null,contestEndAt=0;
 function runDrill(){
-  phase='running';idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;
+  phase='running';idx=0;score=0;correctCount=0;totalRT=0;rtCount=0;misses=0;shotLog=[];
   $('hScore').textContent='0';$('hLastMs').textContent='--';
   msg('GET READY...','go');
 
@@ -483,6 +547,7 @@ function handleNoResponse(){
   idx++;
   misses++;
   score-=3;
+  shotLog.push({hit:false,bpm:0,pts:-3,noResponse:true});
   flash('rgba(255,20,147,.28)');
   msg('✗ NO RESPONSE (-3)','wrong');
   $('hScore').textContent=Math.max(0,score);
@@ -517,12 +582,14 @@ function handleChoice(side){
     correctCount++;
     var tapPts=Math.max(1,Math.round(300-rt/4));
     score+=tapPts;
+    shotLog.push({hit:true,bpm:bpmFromMs(rt),pts:tapPts});
     ripple(rx,ry);flash('rgba(124,58,237,.14)');
     $('hLastMs').textContent=bpmFromMs(rt);
     msg(bpmFromMs(rt)+' BPM · +'+tapPts+' PTS','correct');
   }else{
     misses++;
     score-=3;
+    shotLog.push({hit:false,bpm:bpmFromMs(rt),pts:-3,noResponse:false});
     flash('rgba(255,20,147,.28)');
     $('hLastMs').textContent='MISS';
     msg('✗ MISS! (-3)','wrong');
@@ -601,7 +668,7 @@ function endDrill(){
   $('bpmAvgLabel').innerHTML=lastAvgBpm>0?('Your Average: <b>'+lastAvgBpm+' BPM</b>'):'';
   $('bpmAvgLabel').style.display=lastAvgBpm>0?'block':'none';
 
-  window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses);
+  window.__lastGameBox=recordGameToBoxScore(finalScore,correctCount,idx,avgRT,misses,shotLog);
 
   timers.push(setTimeout(function(){
     $('screen-end').style.display='flex';
