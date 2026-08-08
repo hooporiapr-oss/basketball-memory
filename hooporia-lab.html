@@ -20,6 +20,8 @@ html,body{
   height:100%;
   overflow:hidden;
   background:#000;
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
 }
 body{
   font-family:Arial,Helvetica,sans-serif;
@@ -63,35 +65,6 @@ h1 span{color:#f37418}
   border-radius:14px;
   margin:14px 0 18px;
   box-shadow:0 0 40px rgba(243,116,24,.25);
-}
-.reveal-btn{
-  display:block;
-  width:100%;
-  max-width:440px;
-  margin:6px auto 24px;
-  padding:20px 24px;
-  border:none;
-  border-radius:20px;
-  background:linear-gradient(135deg,#f37418,#ff9b50);
-  color:#1a0900;
-  font-size:1.1rem;
-  font-weight:900;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  cursor:pointer;
-  /* A steady glow instead of a continuous pulse — in VR, a
-     perpetually animating element is one more thing that can read as
-     visual instability inside an already sensitive headset view. */
-  box-shadow:0 0 55px rgba(243,116,24,.8);
-}
-.reveal-btn:active{transform:scale(.98)}
-.reveal-btn.hidden{display:none}
-
-#cardsContainer{
-  transition:opacity .3s;
-}
-#cardsContainer.cardsHidden{
-  display:none;
 }
 
 .subtitle{
@@ -176,9 +149,8 @@ footer{
   <div id="panel">
     <h1>Basketball <span>Hooporia</span></h1>
     <img class="readyBanner" src="ready.png" alt="Are you ready? The game awaits — rise to the challenge">
-    <button id="revealBtn" class="reveal-btn">▶ Click Here To Select Your Training Mode</button>
 
-    <div id="cardsContainer" class="cardsHidden">
+    <div id="cardsContainer">
     <div class="subtitle">Choose a training mode</div>
 
     <div class="featuredRow">
@@ -221,40 +193,7 @@ footer{
 <script>
 (function(){
 var soundBtn=document.getElementById('soundToggle');
-var revealBtn=document.getElementById('revealBtn');
-var cardsContainer=document.getElementById('cardsContainer');
 var muted=false;
-
-var audioCtx=null;
-function getAC(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return audioCtx}
-
-// Same kick-drum synthesis used elsewhere — a quick pitch drop plus a
-// fast amplitude decay, distinct and punchy rather than a tonal note.
-// Played once on reveal, not on a continuous beat loop — a repeating
-// interval timer that also moves an element around the screen was the
-// other likely source of instability in the VR panel, so this version
-// keeps the sound but drops the perpetual animation entirely.
-function playDrum(){
-  if(muted)return;
-  var c=getAC();if(!c)return;
-  try{
-    if(c.state==='suspended')c.resume();
-    var o=c.createOscillator(),g=c.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(150,c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(45,c.currentTime+0.12);
-    g.gain.setValueAtTime(0.3,c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.18);
-    o.connect(g);g.connect(c.destination);
-    o.start();o.stop(c.currentTime+0.2);
-  }catch(e){}
-}
-
-revealBtn.addEventListener('click',function(){
-  cardsContainer.classList.remove('cardsHidden');
-  revealBtn.classList.add('hidden');
-  playDrum();
-});
 
 soundBtn.addEventListener('click',function(e){
   e.stopPropagation();
