@@ -6,16 +6,25 @@
 <title>Hooporia · Access</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
+
+  /* Fixed to the viewport rather than height:100vh — 100vh recalculates
+     whenever a mobile/VR browser's UI chrome shows or hides, and
+     reacting to that recalculation is what causes a page to drift on
+     its own. Fixed positioning removes the dependency entirely. */
   html,body{
     height:100%;overflow:hidden;
     font-family:Arial,Helvetica,sans-serif;color:#fff;
-    background:radial-gradient(circle at 16% 5%,rgba(255,107,53,.15),transparent 30%),linear-gradient(180deg,#0a0300,#050100);
+    background:#000;
     user-select:none;-webkit-user-select:none;
   }
 
+  /* True black, not a dark gradient — this page is meant to disappear
+     into the VR void environment rather than sit as a visible panel
+     floating inside it. */
   #stage{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     padding:24px;
+    background:#000;
   }
 
   #panel{width:100%;max-width:400px;text-align:center}
@@ -38,7 +47,6 @@
     background:linear-gradient(135deg,#f37418,#ff9b50);color:#1a0900;
     font-size:1rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
   }
-  .enter-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(243,116,24,.35)}
   .enter-btn:active{transform:scale(.98)}
 
   .err{margin-top:14px;color:#ff8888;font-size:.85rem;font-weight:700;min-height:18px}
@@ -134,7 +142,12 @@ function reject(msg){
   box.value=''; box.focus();
 }
 
-$('gate-code').focus();
+// No auto-focus on load, unlike the desktop gate — in VR, focusing an
+// input field on page load can trigger the headset's own virtual
+// keyboard or a browser UI reflow, which is a plausible source of the
+// panel destabilizing right as the page appears. Focus only happens
+// now in response to a genuine user action (a rejected code), never
+// automatically.
 </script>
 </body>
 </html>
