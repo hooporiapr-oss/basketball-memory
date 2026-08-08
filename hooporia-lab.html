@@ -28,9 +28,9 @@ body{
   color:#fff;
 }
 
-/* True black, not a dark gradient — this page is meant to disappear
-   into the VR void environment rather than sit as a visible panel
-   floating inside it. */
+/* True black, not a dark gradient — this page is meant to sit
+   perfectly solid whether viewed on desktop or inside a VR headset,
+   rather than fighting a visible background panel in either context. */
 #stage{
   position:fixed;
   inset:0;
@@ -66,73 +66,31 @@ h1 span{color:#f37418}
   margin:14px 0 18px;
   box-shadow:0 0 40px rgba(243,116,24,.25);
 }
-
-.subtitle{
-  font-size:1.25rem;
-  font-weight:700;
-  color:#c9b8a8;
-  margin-bottom:24px;
-  letter-spacing:.03em;
-}
-
-.gameLink{
+.enter-btn{
   display:block;
-  padding:16px 18px;
-  border-radius:14px;
-  border:1px solid rgba(255,126,32,.35);
-  background:rgba(255,255,255,.04);
-  color:#fff;
-  text-decoration:none;
-  font-weight:700;
-  font-size:1.02rem;
-  letter-spacing:.02em;
-  text-align:left;
-  transition:background .15s,border-color .15s,transform .1s;
-}
-.gameLink:hover{
-  background:rgba(255,126,32,.12);
-  border-color:rgba(255,126,32,.7);
-}
-.gameLink:active{transform:scale(.98)}
-.gameLink .tag{
-  display:block;
-  font-size:.72rem;
-  font-weight:400;
-  color:#c9b8a8;
-  margin-top:3px;
-  letter-spacing:.01em;
-}
-
-/* Swish Memory sits on its own, centered, ahead of the grid below. */
-.featuredRow{
-  display:flex;
-  justify-content:center;
-  margin-bottom:14px;
-}
-.gameLink.featured{
   width:100%;
-  max-width:420px;
-  text-align:center;
-  background:linear-gradient(135deg,rgba(243,116,24,.16),rgba(255,255,255,.04));
-  border-color:rgba(255,155,80,.55);
+  max-width:440px;
+  margin:6px auto 24px;
+  padding:20px 24px;
+  border:none;
+  border-radius:20px;
+  background:linear-gradient(135deg,#f37418,#ff9b50);
+  color:#1a0900;
+  font-size:1.1rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+  text-decoration:none;
+  box-shadow:0 0 55px rgba(243,116,24,.8);
 }
-.gameLink.featured .tag{text-align:center}
-
-.gameGrid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-}
+.enter-btn:active{transform:scale(.98)}
 
 footer{
   margin-top:24px;
   font-size:.72rem;
   color:#6b5d52;
   letter-spacing:.02em;
-}
-
-@media (max-width:520px){
-  .gameGrid{grid-template-columns:1fr}
 }
 
 #soundToggle{
@@ -149,43 +107,7 @@ footer{
   <div id="panel">
     <h1>Basketball <span>Hooporia</span></h1>
     <img class="readyBanner" src="ready.png" alt="Are you ready? The game awaits — rise to the challenge">
-
-    <div id="cardsContainer">
-    <div class="subtitle">Choose a training mode</div>
-
-    <div class="featuredRow">
-      <a class="gameLink featured" href="basketball-flash-sphere.html">
-        Basketball Flash Reaction
-        <span class="tag">A basketball flashes once, then vanishes — read it, remember it, and swish as many threes as you can in 60 seconds</span>
-      </a>
-    </div>
-
-    <div class="gameGrid" style="margin-top:14px">
-      <a class="gameLink" href="basketball-recall.html">
-        Basketball Recall
-        <span class="tag">Watch a sequence, then tap it back in order</span>
-      </a>
-      <a class="gameLink" href="basketball-reflex.html">
-        Basketball Reflex
-        <span class="tag">Find and tap every spot that flashed — order doesn't matter</span>
-      </a>
-      <a class="gameLink" href="basketball-replay.html">
-        Basketball Replay
-        <span class="tag">Watch a sequence play out, then replay it back</span>
-      </a>
-      <a class="gameLink" href="basketball-recognition.html">
-        Basketball Recognition
-        <span class="tag">Spot which cell changed between two patterns</span>
-      </a>
-    </div>
-
-    <div class="featuredRow" style="margin-top:14px;margin-bottom:0">
-      <a class="gameLink featured" href="shoot-training-loop.html">
-        Swish Memory
-        <span class="tag">Watch the swish, on repeat — until your shot just finishes what you see</span>
-      </a>
-    </div>
-    </div>
+    <a class="enter-btn" href="hooporia-lab-02.html">▶ Click Here To Select Your Training Mode</a>
 
     <footer>Gostar Digital LLC</footer>
   </div>
