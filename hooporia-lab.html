@@ -51,21 +51,15 @@ body{
   overflow-y:auto;
   text-align:center;
 }
-h1{
-  font-size:clamp(1.6rem,4vw,2.3rem);
+.bigTitle{
+  font-size:clamp(2.4rem,7vw,4.2rem);
+  font-weight:900;
   letter-spacing:.02em;
-  margin-bottom:2px;
+  line-height:1.05;
+  margin:40px 0 44px;
+  text-shadow:0 0 50px rgba(243,116,24,.5);
 }
-h1 span{color:#f37418}
-.readyBanner{
-  display:block;
-  width:100%;
-  max-width:820px;
-  height:auto;
-  border-radius:14px;
-  margin:14px 0 18px;
-  box-shadow:0 0 40px rgba(243,116,24,.25);
-}
+.bigTitle span{color:#f37418}
 .enter-btn{
   display:block;
   width:100%;
@@ -105,8 +99,7 @@ footer{
 
 <div id="stage">
   <div id="panel">
-    <h1>Basketball <span>Hooporia</span></h1>
-    <img class="readyBanner" src="ready.png" alt="Are you ready? The game awaits — rise to the challenge">
+    <div class="bigTitle">Basketball <span>Hooporia</span></div>
     <a class="enter-btn" href="hooporia-lab-02.html">▶ Click Here To Select Your Training Mode</a>
 
     <footer>Gostar Digital LLC</footer>
